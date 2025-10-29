@@ -1,7 +1,6 @@
 'use client'
 import { Metadata } from 'next'
 import {Card, CardHeader, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Row, Table} from 'react-bootstrap'
-import CountryCard from "./components/CountryCard";
 import {useEffect, useMemo, useState} from "react";
 import {useFetchData} from "../../../../../hooks/useFetchData";
 import API_ENDPOINTS from "../../../../(other)/api/Constant";

@@ -46,27 +46,27 @@ interface SenderResponse {
   };
 }
 
-const BeneficiaryCard: React.FC = () => {
+export const BeneficiaryCard: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // 🔹 Debounce pour éviter les requêtes trop fréquentes
+  // 🔹 Debounce recherche
   useEffect(() => {
     const handler = debounce((value: string) => setDebouncedSearch(value), 500);
     handler(search);
     return () => handler.cancel();
   }, [search]);
 
-  // 🔹 Récupération des données depuis l’API
   const { data, loading, error, refetch } = useFetchData<SenderResponse>(
       API_ENDPOINTS.BENEFICIARIES_V3,
       { page, limit, search: debouncedSearch }
   );
 
+  // 🔹 Synchroniser la page ou le search avec le refetch
   useEffect(() => {
-    refetch?.({ page, limit, search: debouncedSearch });
+    refetch({ page, limit, search: debouncedSearch });
   }, [page, limit, debouncedSearch, refetch]);
 
   const customers = data?.data?.results ?? [];
@@ -74,27 +74,18 @@ const BeneficiaryCard: React.FC = () => {
 
   const getPaginationItems = () => {
     const items = [];
-    const delta = 2; // nombre de pages avant et après la page courante
-
+    const delta = 2;
     let start = Math.max(1, page - delta);
     let end = Math.min(totalPages, page + delta);
 
     if (start > 1) {
-      items.push(
-          <Pagination.Item key={1} onClick={() => setPage(1)}>
-            1
-          </Pagination.Item>
-      );
+      items.push(<Pagination.Item key={1} onClick={() => setPage(1)}>1</Pagination.Item>);
       if (start > 2) items.push(<Pagination.Ellipsis key="start-ellipsis" disabled />);
     }
 
     for (let number = start; number <= end; number++) {
       items.push(
-          <Pagination.Item
-              key={number}
-              active={number === page}
-              onClick={() => setPage(number)}
-          >
+          <Pagination.Item key={number} active={number === page} onClick={() => setPage(number)}>
             {number}
           </Pagination.Item>
       );
@@ -102,11 +93,7 @@ const BeneficiaryCard: React.FC = () => {
 
     if (end < totalPages) {
       if (end < totalPages - 1) items.push(<Pagination.Ellipsis key="end-ellipsis" disabled />);
-      items.push(
-          <Pagination.Item key={totalPages} onClick={() => setPage(totalPages)}>
-            {totalPages}
-          </Pagination.Item>
-      );
+      items.push(<Pagination.Item key={totalPages} onClick={() => setPage(totalPages)}>{totalPages}</Pagination.Item>);
     }
 
     return items;
@@ -116,9 +103,8 @@ const BeneficiaryCard: React.FC = () => {
       <Card>
         <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
           <div className="flex-grow-1">
-            <h4 className="header-title">Beneficiares</h4>
+            <h4 className="header-title">Bénéficiaires</h4>
           </div>
-
           <div className="d-flex flex-wrap flex-lg-nowrap gap-2">
             <div className="position-relative">
               <input
@@ -128,10 +114,7 @@ const BeneficiaryCard: React.FC = () => {
                   className="form-control ps-4"
                   placeholder="Rechercher un client..."
               />
-              <IconifyIcon
-                  icon="ti:search"
-                  className="ti position-absolute top-50 translate-middle-y start-0 ms-2"
-              />
+              <IconifyIcon icon="ti:search" className="ti position-absolute top-50 translate-middle-y start-0 ms-2" />
             </div>
             <Link href="/customers/add" className="btn btn-primary">
               <IconifyIcon icon="ri:add-line" className="me-1" />
@@ -140,7 +123,6 @@ const BeneficiaryCard: React.FC = () => {
           </div>
         </CardHeader>
 
-        {/* TABLEAU */}
         <div className="table-responsive">
           {loading ? (
               <p className="text-center p-3">Chargement...</p>
@@ -170,25 +152,9 @@ const BeneficiaryCard: React.FC = () => {
                       <td>#{c.id}</td>
                       <td className="d-flex align-items-center gap-2">
                         {c.photo ? (
-                            <img
-                                src={c.photo}
-                                alt="avatar"
-                                width={40}
-                                height={40}
-                                style={{
-                                  borderRadius: "50%",
-                                  objectFit: "cover",
-                                }}
-                            />
+                            <img src={c.photo} alt="avatar" width={40} height={40} style={{ borderRadius: "50%", objectFit: "cover" }} />
                         ) : (
-                            <div
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  borderRadius: "50%",
-                                  background: "#eee",
-                                }}
-                            />
+                            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eee" }} />
                         )}
                         {c.name || "-"}
                       </td>
@@ -201,13 +167,9 @@ const BeneficiaryCard: React.FC = () => {
                       <td>{c.civility || "-"}</td>
                       <td className="text-center pe-3">
                         <Dropdown>
-                          <DropdownToggle className="btn btn-light btn-sm">
-                            ⋮
-                          </DropdownToggle>
+                          <DropdownToggle className="btn btn-light btn-sm">⋮</DropdownToggle>
                           <DropdownMenu>
-                            <DropdownItem as={Link} href={`/beneficiaries/${c.id}/edit`}>
-                              Modifier
-                            </DropdownItem>
+                            <DropdownItem as={Link} href={`/beneficiaries/${c.id}/edit`}>Modifier</DropdownItem>
                           </DropdownMenu>
                         </Dropdown>
                       </td>
@@ -218,35 +180,21 @@ const BeneficiaryCard: React.FC = () => {
           )}
         </div>
 
-        {/* PAGINATION */}
         {totalPages > 1 && (
             <CardFooter>
               <Pagination className="mb-0 justify-content-end">
-                <Pagination.First
-                    onClick={() => setPage(1)}
-                    disabled={page === 1}
-                />
-                <Pagination.Prev
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                />
-
+                <Pagination.First onClick={() => setPage(1)} disabled={page === 1} />
+                <Pagination.Prev onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} />
                 {getPaginationItems()}
-
-                <Pagination.Next
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                />
-                <Pagination.Last
-                    onClick={() => setPage(totalPages)}
-                    disabled={page === totalPages}
-                />
+                <Pagination.Next onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} />
+                <Pagination.Last onClick={() => setPage(totalPages)} disabled={page === totalPages} />
               </Pagination>
             </CardFooter>
         )}
       </Card>
   );
 };
+
 
 
 export default BeneficiaryCard;

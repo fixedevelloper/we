@@ -2,6 +2,62 @@ import {useCallback, useEffect, useMemo, useState} from 'react'
 import {useSession} from "next-auth/react";
 import {HeadersInit} from "undici-types";
 
+
+export type QueryParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+};
+
+export function useFetchData<DataType>(
+    endpoint: string,
+    initialParams: Record<string, any> = {},
+    options: RequestInit = {}
+) {
+    const { data: session } = useSession();
+    const [data, setData] = useState<DataType | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+
+    const fetchData = useCallback(async (params: Record<string, any> = initialParams) => {
+        try {
+            setLoading(true);
+
+            const url = new URL(endpoint, window.location.origin);
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== "")
+                    url.searchParams.append(key, String(value));
+            });
+
+            const headers: HeadersInit = {
+                "Content-Type": "application/json",
+                ...options.headers,
+            };
+
+            if (session?.accessToken) headers["Authorization"] = `Bearer ${session.accessToken}`;
+
+            const res = await fetch(url.toString(), { ...options, headers });
+            if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+
+            const result = await res.json();
+            setData(result);
+        } catch (err) {
+            setError(err as Error);
+        } finally {
+            setLoading(false);
+        }
+    }, [endpoint, JSON.stringify(initialParams), JSON.stringify(options), session?.accessToken]);
+
+    // 🔹 Appel initial une seule fois
+    useEffect(() => {
+        fetchData();
+    }, []); // pas de dépendances → pas de boucle infinie
+
+    return { data, loading, error, refetch: fetchData };
+}
+
+
+
 /*export const useFetchData = <DataType>(fn: () => Promise<DataType>) => {
   const [data, setData] = useState<DataType>()
   useEffect(() => {
@@ -16,7 +72,7 @@ import {HeadersInit} from "undici-types";
 }*/
 // 🔹 Hook générique
 
-export function useFetchData<DataType>(
+/*export function useFetchData<DataType>(
     endpoint: string,
     queryParams: Record<string, any> = {},
     options: RequestInit = {}
@@ -67,4 +123,4 @@ export function useFetchData<DataType>(
   }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };
-}
+}*/

@@ -4,7 +4,6 @@ import debounce from "lodash.debounce";
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button, Card, CardFooter, CardHeader, Table } from 'react-bootstrap'
-import CustomPagination from './CustomPagination'
 import { useFetchData } from '@/hooks/useFetchData'
 import API_ENDPOINTS from "../../../(other)/api/Constant";
 import React, { useEffect, useState } from "react";

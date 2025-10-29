@@ -1,6 +1,5 @@
 import PageTitle from '@/components/PageTitle'
 import { Metadata } from 'next'
-import AddTransactionCard from "../components/AddTransactionCard";
 import AddRechargeCard from "../components/AddRechargeCard";
 
 export const metadata: Metadata = { title: 'Ajouter une recharge' }

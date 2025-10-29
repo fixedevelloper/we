@@ -5,13 +5,6 @@ import {Button, Card, Col, Form, InputGroup, ListGroup, ProgressBar, Row, Table}
 import API_ENDPOINTS from "../../../(other)/api/Constant";
 import {useFetchData} from "../../../../hooks/useFetchData";
 import {useSession} from "next-auth/react";
-import Feedback from "react-bootstrap/Feedback";
-import Badge from "react-bootstrap/Badge";
-import Image from "next/image";
-import Links from "../../ui/links/page";
-import Link from "next/link";
-import TransactionReceipt from "../TransactionReceipt";
-import TransactionReceiptModal from "../TransactionReceipt";
 import IconifyIcon from "../../../../components/wrappers/IconifyIcon";
 import Select from "react-select";
 import {useNotificationContext} from "../../../../context/useNotificationContext";
