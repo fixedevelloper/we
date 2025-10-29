@@ -9,6 +9,7 @@ import IconifyIcon from "../../../../components/wrappers/IconifyIcon";
 import Select from "react-select";
 import {useNotificationContext} from "../../../../context/useNotificationContext";
 import Spinner from "../../../../components/Spinner";
+import {Country, ResponseApi} from "../../../../types/data";
 
 
 type Customer = {
@@ -57,7 +58,9 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
         requestUrl
     );
 
-    const { data: countries = [] } = useFetchData<any[]>(API_ENDPOINTS.COUNTRIES);
+    const { data: countriesResponse } = useFetchData<ResponseApi<Country>>(API_ENDPOINTS.COUNTRIES);
+
+    const countries = countriesResponse?.data ?? [];
 
     useEffect(() => {
         if (selectedCountry && refetchCities) refetchCities();
@@ -65,10 +68,10 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
 
     // 🧩 Remplissage automatique du formulaire
     useEffect(() => {
-        if (countries?.data && customer_?.data) {
+        if (countries && customer_?.data) {
             const c = customer_.data;
 
-            const country = countries.data.find((x: any) => x.id === c.country_id);
+            const country = countries.find((x: any) => x.id === c.country_id);
             const city = c.city_id
                 ? { value: c.city_id, label: cities?.data?.find((ci: any) => ci.id === c.city_id)?.name || "" }
                 : null;
@@ -209,7 +212,7 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
                             <Select
                                 isClearable
                                 value={selectedCountry}
-                                options={(countries?.data || []).map((c: any) => ({
+                                options={(countries || []).map((c: any) => ({
                                     value: c.id,
                                     label: c.name,
                                 }))}

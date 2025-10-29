@@ -25,6 +25,7 @@ import {useSession} from "next-auth/react";
 import useToggle from "../../../../hooks/useToggle";
 import {useNotificationContext} from "../../../../context/useNotificationContext";
 import Spinner from "../../../../components/Spinner";
+import {ResponseApi} from "../../../../types/data";
 
 type StepWizardInstance = {
     nextStep: () => void
@@ -65,13 +66,13 @@ export const StepOne: React.FC<StepOneProps> = ({
     const [selectedCity, setSelectedCity] = useState<any>(null);
     const [comment, setComment] = useState<any>(null);
     const shouldFetchRelations = selectedSender && selectedBeneficiary;
-    const {data: relations = []} = useFetchData<any[]>(
+    const { data: relactionsResponse } = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {sender_type: selectedSender.type, beneficiary_type: selectedBeneficiary.type, service: "relaction"}
             : {}
     );
-
+const relations=relactionsResponse?.data?? [];
     useEffect(() => {
         if (selectedCountry && refetchCities) refetchCities();
     }, [selectedCountry]);
@@ -169,7 +170,7 @@ export const StepOne: React.FC<StepOneProps> = ({
                     <label className="form-label">Relation</label>
                     <Select
                         className="select2"
-                        options={(relations?.data || relations || []).map((r: any) => ({value: r.id, label: r.name}))}
+                        options={(relations || relations || []).map((r: any) => ({value: r.id, label: r.name}))}
                         isDisabled={!shouldFetchRelations}
                         placeholder={shouldFetchRelations ? "Sélectionner une relation" : "Sélectionner expéditeur et bénéficiaire"}
                         value={selectedRelaction}
@@ -224,7 +225,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     const requestUrlTaux = urlTaux ?? "";
     const {data: taux = {data: {}}, refetch} = useFetchData<any>(requestUrlTaux, {amount});
     // 🔹 Fetch des relations
-    const {data: origin_fonds = []} = useFetchData<any[]>(
+    const {data: origin_fondsResponse} = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {
@@ -234,8 +235,8 @@ export const StepTwo: React.FC<StepTwoProps> = ({
             }
             : {}
     );
-
-    const {data: raison = []} = useFetchData<any[]>(
+    const origin_fonds=origin_fondsResponse?.data?? [];
+    const {data: raisonsResponse} = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {
@@ -245,6 +246,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
             }
             : {}
     );
+    const raison=raisonsResponse?.data?? [];
     // 🔹 Refetch à chaque changement de montant
     useEffect(() => {
         if (selectCountry?.value && refetch) refetch({amount});
@@ -351,7 +353,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
                     <Select
                         className="select2"
                         isDisabled={!shouldFetchRelations}
-                        options={(origin_fonds?.data || origin_fonds || []).map((r: any) => ({
+                        options={(origin_fonds || origin_fonds || []).map((r: any) => ({
                             value: r.id,
                             label: r.name
                         }))}
@@ -370,7 +372,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
                     <Select
                         className="select2"
                         isDisabled={!shouldFetchRelations}
-                        options={(raison?.data || raison || []).map((r: any) => ({value: r.id, label: r.name}))}
+                        options={(raison || []).map((r: any) => ({value: r.id, label: r.name}))}
                         placeholder="Sélectionner une raison d'envoi"
                         value={selectedRaison}
                         onChange={(raison) => {

@@ -11,5 +11,6 @@ declare module "next-auth" {
         roles?:string
         photoURL?:string
         otpSend?:string
+        emailVerified?:string
     }
 }

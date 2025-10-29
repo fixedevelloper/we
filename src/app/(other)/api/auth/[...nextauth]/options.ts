@@ -87,15 +87,15 @@ export const options: NextAuthOptions = {
     async session({ session, token }) {
       // 🔹 On rattache le contenu du token à la session
       session.user = {
-        id: token.id,
+        id: String(token.id),
         name: token.name,
         email: token.email,
-        roles: token.roles,
-        photoURL: token.photoURL,
-        otpSend: token.otpSend,
-        emailVerified: token.emailVerified,
+        roles: token.roles as string | undefined,
+        photoURL: token.photoURL as string | undefined,
+        otpSend: token.otpSend as string | undefined,
+        emailVerified: token.emailVerified as string | undefined,
       };
-      session.accessToken = token.accessToken;
+      session.accessToken = token.accessToken  as string | undefined;
       return session;
     },
   },

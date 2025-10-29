@@ -34,11 +34,11 @@ const AddRechargeCard: React.FC = () => {
     const countries = countriesResponse?.data ?? [];
     const url = userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : undefined;
     const requestUrl = url ?? "";
-    const {data: senders = []} = useFetchData<any[]>(
+    const { data: sendersResponse } = useFetchData<ResponseApi<any>>(
         requestUrl
     );
 
-
+    const senders = sendersResponse?.data ?? [];
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         const form = event.currentTarget
@@ -92,7 +92,7 @@ const AddRechargeCard: React.FC = () => {
                             <label className="form-label">Client</label>
                             <Select
                                 className="select2"
-                                options={(senders?.data || []).map((s: any) => ({ value: s.id, label: `${s.first_name} ${s.last_name}`, type: s.type }))}
+                                options={(senders || []).map((s: any) => ({ value: s.id, label: `${s.first_name} ${s.last_name}`, type: s.type }))}
                                 onChange={(option) => setSelectedSender(option)}
                                 value={selectedSender}
                             />

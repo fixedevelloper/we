@@ -29,12 +29,15 @@ export function useFetchData<DataType>(
                     url.searchParams.append(key, String(value));
             });
 
-            const headers: HeadersInit = {
+            const headers = new Headers({
                 "Content-Type": "application/json",
                 ...options.headers,
-            };
+            });
 
-            if (session?.accessToken) headers["Authorization"] = `Bearer ${session.accessToken}`;
+            if (session?.accessToken) {
+                headers.set("Authorization", `Bearer ${session.accessToken}`);
+            }
+
 
             const res = await fetch(url.toString(), { ...options, headers });
             if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
