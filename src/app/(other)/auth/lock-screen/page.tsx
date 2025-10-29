@@ -1,3 +1,4 @@
+'use client'
 import logoDark from '@/assets/images/logo-dark.png'
 import logo from '@/assets/images/logo.png'
 import avatar1 from '@/assets/images/users/avatar-1.jpg'
