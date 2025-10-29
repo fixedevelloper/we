@@ -11,7 +11,6 @@ import {
     Row,
     Table
 } from 'react-bootstrap'
-import CountryCard from "./components/CountryCard";
 import React, {useEffect, useMemo, useState} from "react";
 import {useFetchData} from "../../../../../hooks/useFetchData";
 import API_ENDPOINTS from "../../../../(other)/api/Constant";
