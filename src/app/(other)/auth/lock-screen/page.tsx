@@ -3,14 +3,12 @@ import logoDark from '@/assets/images/logo-dark.png'
 import logo from '@/assets/images/logo.png'
 import avatar1 from '@/assets/images/users/avatar-1.jpg'
 import { currentYear, developedBy } from '@/context/constants'
-import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Card, Col, Row } from 'react-bootstrap'
 import LockScreen from './components/LockScreen'
 import {useSession} from "next-auth/react";
 
-export const metadata: Metadata = { title: 'Lock Screen' }
 
 const LockScreenPage = () => {
   const { data: session, status } = useSession();
