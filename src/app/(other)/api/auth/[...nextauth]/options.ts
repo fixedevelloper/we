@@ -1,9 +1,7 @@
-import type { NextAuthOptions } from 'next-auth'
+import type {NextAuthOptions} from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { randomBytes } from 'crypto'
-import { UserType } from '@/types/auth'
+import {randomBytes} from 'crypto'
 import API_ENDPOINTS from "../../Constant";
-import {log} from "next/dist/server/typescript/utils";
 
 export const options: NextAuthOptions = {
   providers: [
@@ -45,18 +43,16 @@ export const options: NextAuthOptions = {
 
         // ✅ Vérifie le format attendu
         if (result.status === "success" && result.data?.token) {
-          const user = {
+          return {
             id: result.data.id,
             name: result.data.name,
             email: result.data.email,
             token: result.data.token,
-            roles: result.data.roles,
+            role: result.data.roles,
             photoURL: result.data.photoURL,
             otpSend: result.data.otpSend,
             emailVerified: result.data.emailVerified,
-          };
-
-          return user; // Retourne l'objet user à NextAuth
+          }; // Retourne l'objet user à NextAuth
         }
 
         throw new Error(result.message || "Identifiants invalides");

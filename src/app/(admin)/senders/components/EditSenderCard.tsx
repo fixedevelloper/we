@@ -51,9 +51,10 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
 
     const { data: cities = { data: [] }, loading: citiesLoading, refetch: refetchCities } =
         useFetchData<any>(citiesEndpoint || "", {}, {});
-
-    const { data: customer_, isLoading } = useFetchData<{ data: Customer }>(
-        customerId ? `${API_ENDPOINTS.SENDERS_V3}/${customerId}/one` : null
+    const url = customerId ? `${API_ENDPOINTS.SENDERS_V3}/${customerId}/one` : undefined;
+    const requestUrl = url ?? "";
+    const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
+        requestUrl
     );
 
     const { data: countries = [] } = useFetchData<any[]>(API_ENDPOINTS.COUNTRIES);
@@ -64,7 +65,7 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
 
     // 🧩 Remplissage automatique du formulaire
     useEffect(() => {
-        if (customer_?.data && countries?.data) {
+        if (countries?.data && customer_?.data) {
             const c = customer_.data;
 
             const country = countries.data.find((x: any) => x.id === c.country_id);
@@ -111,7 +112,7 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
                     alignItems: "center",
                 }}
             >
-                <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
+                <Spinner type="border" color="primary" style={{ width: "3rem", height: "3rem" }} />
                 <p className="mt-3 text-muted">Chargement des détails du client...</p>
             </div>
         );
@@ -178,7 +179,7 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
                         flexDirection: "column",
                     }}
                 >
-                    <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
+                    <Spinner type="border" color="primary" style={{ width: "3rem", height: "3rem" }} />
                     <p className="mt-3 text-muted fw-semibold">Mise à jour en cours...</p>
                 </div>
             )}
@@ -415,7 +416,7 @@ const EditSenderCard: React.FC<{ customerId: string }> = ({ customerId }) => {
                     <Button variant="primary" onClick={handleUpdate} disabled={loadingSubmit}>
                         {loadingSubmit ? (
                             <>
-                                <Spinner size="sm" animation="border" className="me-2" /> Mise à jour...
+                                <Spinner size="sm" type="border" className="me-2" /> Mise à jour...
                             </>
                         ) : (
                             <>

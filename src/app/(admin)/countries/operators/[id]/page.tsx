@@ -1,7 +1,6 @@
 'use client'
 import { Metadata } from 'next'
 import {Card, CardHeader, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Row, Table} from 'react-bootstrap'
-import CountryCard from "./components/CountryCard";
 import {useEffect, useState} from "react";
 import {useFetchData} from "../../../../../hooks/useFetchData";
 import API_ENDPOINTS from "../../../../(other)/api/Constant";
@@ -29,9 +28,10 @@ const OperatorPage  : React.FC = () => {
     const params = useParams(); // ✅ Récupère les paramètres dynamiques de l’URL
     const id = params?.id as string;
 
-
+    const url = id ? `${API_ENDPOINTS.OPERATORS}/${id}` : undefined;
+    const requestUrl = url ?? "";
     const { data, loading, error, refetch } = useFetchData<CityResponse>(
-        id ? `${API_ENDPOINTS.OPERATORS}/${id}` : null,
+        requestUrl,
         { page, limit, search: debouncedSearch }
     );
 

@@ -21,8 +21,10 @@ const CitiesPage: React.FC = () => {
     const params = useParams();
     const id = params?.id as string;
 
+    const url = id ? `${API_ENDPOINTS.CITIES}/${id}` : undefined;
+    const requestUrl = url ?? "";
     const { data, loading:loading, error } = useFetchData<CityResponse>(
-        id ? `${API_ENDPOINTS.CITIES}/${id}` : null
+        requestUrl
     );
 
     const cities = data?.data ?? [];

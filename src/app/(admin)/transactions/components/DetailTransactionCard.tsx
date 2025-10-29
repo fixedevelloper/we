@@ -8,23 +8,23 @@ import {useSession} from "next-auth/react";
 import Feedback from "react-bootstrap/Feedback";
 import Badge from "react-bootstrap/Badge";
 import Image from "next/image";
-import Links from "../../ui/links/page";
-import Link from "next/link";
-import TransactionReceipt from "../TransactionReceipt";
 import TransactionReceiptModal from "../TransactionReceipt";
+import Spinner from "../../../../components/Spinner";
 
 const DetailTransactionCard: React.FC<{ transactionId: string }> = ({ transactionId }) => {
     const { data: session, status } = useSession();
     const loadingSession = status === "loading";
     const [showReceipt, setShowReceipt] = useState(false);
+    const url = transactionId ? `${API_ENDPOINTS.TRANSACTIONS}/detail/${transactionId}` : undefined;
+    const requestUrl = url ?? "";
     const { data: transaction_, loading:isLoading } = useFetchData<any>(
-        transactionId ? `${API_ENDPOINTS.TRANSACTIONS}/detail/${transactionId}` : null
+        requestUrl
     );
 
     if (loadingSession || isLoading) {
         return (
             <div className="text-center my-5">
-                <Spinner animation="border" variant="primary" />
+                <Spinner type="border" color="primary" />
                 <p className="mt-3 small">Chargement des détails de la transaction...</p>
             </div>
         );

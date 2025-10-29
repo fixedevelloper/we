@@ -98,6 +98,11 @@ const TransactionsCard: React.FC = () => {
 
     return items;
   };
+
+  function handleDelete(id: any) {
+
+  }
+
   return (
       <Card>
         {/* CardHeader avec search */}

@@ -4,7 +4,6 @@ import PageTitle from '@/components/PageTitle'
 import { Spinner } from 'react-bootstrap';
 import {useParams} from 'next/navigation';
 import React from "react";
-import DetailCustomerCard from "../components/DetailCustomerCard";
 import EditCustomerCard from "../../components/EditCustomerCard";
 
 const EditCustomerPage = () => {

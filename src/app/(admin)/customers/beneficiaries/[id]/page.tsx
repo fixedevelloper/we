@@ -36,9 +36,10 @@ const BeneficiaryPage: React.FC = () => {
     const [search, setSearch] = useState("");
     const params = useParams(); // récupère l’ID du pays depuis l’URL
     const id = params?.id as string;
-
+    const url = id ? `${API_ENDPOINTS.BENEFICIARIES}/${id}` : undefined;
+    const requestUrl = url ?? "";
     const { data, loading, error } = useFetchData<BeneficiaryResponse>(
-        id ? `${API_ENDPOINTS.BENEFICIARIES}/${id}` : null
+        requestUrl
     );
 
     const beneficiaries = data?.data ?? [];
@@ -49,6 +50,10 @@ const BeneficiaryPage: React.FC = () => {
         const lowerSearch = search.toLowerCase();
         return beneficiaries.filter((b) => b.name.toLowerCase().includes(lowerSearch));
     }, [beneficiaries, search]);
+
+    function handleDelete(id: number) {
+        
+    }
 
     return (
         <Card>

@@ -7,4 +7,7 @@ export type UserType = {
   lastName: string
   role: string
   token: string
+  photoURL: string,
+  otpSend: string,
+  emailVerified: string,
 }

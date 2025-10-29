@@ -21,9 +21,10 @@ const BankPage: React.FC = () => {
     const [search, setSearch] = useState("");
     const params = useParams(); // récupère l’ID du pays depuis l’URL
     const id = params?.id as string;
-
+    const url = id ? `${API_ENDPOINTS.BANKLIST}/${id}` : undefined;
+    const requestUrl = url ?? "";
     const { data, loading, error } = useFetchData<BankResponse>(
-        id ? `${API_ENDPOINTS.BANKLIST}/${id}` : null
+        requestUrl
     );
 
     const banks = data?.data ?? [];

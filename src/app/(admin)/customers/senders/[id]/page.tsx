@@ -12,7 +12,6 @@ import {
     Row,
     Table
 } from 'react-bootstrap'
-import CountryCard from "./components/CountryCard";
 import {useEffect, useMemo, useState} from "react";
 import {useFetchData} from "../../../../../hooks/useFetchData";
 import API_ENDPOINTS from "../../../../(other)/api/Constant";
@@ -46,9 +45,10 @@ const SenderPage: React.FC = () => {
     const [search, setSearch] = useState("");
     const params = useParams();
     const id = params?.id as string;
-
+    const url = id ? `${API_ENDPOINTS.CUSTOMERS}/senders/${id}` : undefined;
+    const requestUrl = url ?? "";
     const { data, loading, error } = useFetchData<SenderResponse>(
-        id ? `${API_ENDPOINTS.CUSTOMERS}/senders/${id}` : null
+        requestUrl
     );
 
     const senders = data?.data ?? [];

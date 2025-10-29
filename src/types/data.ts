@@ -1,7 +1,15 @@
 import { StaticImageData } from 'next/image'
 
 export type IdType = string
+export type ResponseApi<T> = {
+  data: T[];
+};
 
+export type Country = {
+  id: IdType
+  name: string;
+  code: string;
+}
 interface TransactionType {
   id: number;
   status: string;

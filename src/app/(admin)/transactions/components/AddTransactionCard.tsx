@@ -13,17 +13,15 @@ import {
     ToastBody,
     ToastHeader
 } from "react-bootstrap";
-import Link from "next/link";
 import StepWizard from "react-step-wizard";
 import ComponentContainerCard from "../../../../components/ComponentContainerCard";
-import TextFormInput from '@/components/form/TextFormInput'
+
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
-import {yupResolver} from '@hookform/resolvers/yup'
+
 import Select from "react-select";
 import API_ENDPOINTS from "../../../(other)/api/Constant";
 import {useFetchData} from "../../../../hooks/useFetchData";
 import {useSession} from "next-auth/react";
-import Image from "next/image";
 import useToggle from "../../../../hooks/useToggle";
 import {useNotificationContext} from "../../../../context/useNotificationContext";
 import Spinner from "../../../../components/Spinner";
@@ -219,10 +217,12 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     const [selectedRaison, setSelectedRaison] = useState<any>(null);
     const [selectedOriginFond, setSelectedOriginFond] = useState<any>(null);
     const shouldFetchRelations = selectedSender && selectedBeneficiary;
-
-    const {data: banks = {data: []}, loading: banksLoading} = useFetchData<any>(selectCountry ? `${API_ENDPOINTS.BANKLIST}/${selectCountry.value}` : null);
-
-    const {data: taux = {data: {}}, refetch} = useFetchData<any>(selectCountry ? `${API_ENDPOINTS.TAUXEXCHANGE}/${selectCountry.value}` : null, {amount});
+    const url = selectCountry ? `${API_ENDPOINTS.BANKLIST}/${selectCountry.value}` : undefined;
+    const requestUrl = url ?? "";
+    const {data: banks = {data: []}, loading: banksLoading} = useFetchData<any>(requestUrl);
+    const urlTaux = selectCountry ? `${API_ENDPOINTS.TAUXEXCHANGE}/${selectCountry.value}` : undefined;
+    const requestUrlTaux = urlTaux ?? "";
+    const {data: taux = {data: {}}, refetch} = useFetchData<any>(requestUrlTaux, {amount});
     // 🔹 Fetch des relations
     const {data: origin_fonds = []} = useFetchData<any[]>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
@@ -560,11 +560,9 @@ export const StepThree: React.FC<StepThreeProps> = ({ stepOneData, stepTwoData }
                         {loading ? (
                             <>
                                 <Spinner
-                                    as="span"
-                                    animation="border"
+                                    tag="span"
+                                    type="border"
                                     size="sm"
-                                    role="status"
-                                    aria-hidden="true"
                                     className="me-2"
                                 />
                                 Envoi en cours...
@@ -613,9 +611,10 @@ const AddTransactionCard: React.FC = () => {
     const {data: countries = []} = useFetchData<any[]>(
         API_ENDPOINTS.COUNTRIES
     );
-
+    const url = userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : undefined;
+    const requestUrl = url ?? "";
     const {data: senders = []} = useFetchData<any[]>(
-        userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : null
+        requestUrl
     );
 
 

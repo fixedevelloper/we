@@ -7,12 +7,8 @@ import {useFetchData} from "../../../../hooks/useFetchData";
 import {useSession} from "next-auth/react";
 import Feedback from "react-bootstrap/Feedback";
 import Badge from "react-bootstrap/Badge";
-import Image from "next/image";
-import Links from "../../ui/links/page";
-import Link from "next/link";
-import TransactionReceipt from "../TransactionReceipt";
-import TransactionReceiptModal from "../TransactionReceipt";
 import IconifyIcon from "../../../../components/wrappers/IconifyIcon";
+import Spinner from "../../../../components/Spinner";
 
 interface Customer {
     id: number;
@@ -36,15 +32,16 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
     const { data: session, status } = useSession();
     const loadingSession = status === "loading";
     const [showReceipt, setShowReceipt] = useState(false);
-
+    const url = customerId ? `${API_ENDPOINTS.CUSTOMERS}/${customerId}` : undefined;
+    const requestUrl = url ?? "";
     const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
-        customerId ? `${API_ENDPOINTS.CUSTOMERS}/${customerId}` : null
+        requestUrl
     );
 
     if (loadingSession || isLoading) {
         return (
             <div className="text-center my-5">
-                <Spinner animation="border" variant="primary" />
+                <Spinner type="border" color="primary" />
                 <p className="mt-3 small text-muted">Chargement des détails du client...</p>
             </div>
         );

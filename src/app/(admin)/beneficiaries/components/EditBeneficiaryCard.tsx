@@ -3,12 +3,13 @@ import React, {useRef, useState, useEffect, FormEvent} from "react";
 import {Button, Card, Col, Form, InputGroup, ListGroup, ProgressBar, Row, Table} from "react-bootstrap";
 
 import API_ENDPOINTS from "../../../(other)/api/Constant";
-import {useSession} from "next-auth/react";
 import IconifyIcon from "../../../../components/wrappers/IconifyIcon";
 import Select from "react-select";
 import {useNotificationContext} from "../../../../context/useNotificationContext";
 import Spinner from "../../../../components/Spinner";
 import {useFetchData} from "../../../../hooks/useFetchData";
+import {Country, ResponseApi} from "../../../../types/data";
+import {useSession} from "next-auth/react";
 
 
 type Customer = {
@@ -37,7 +38,7 @@ type Customer = {
     routing_number?: string;
 };
 
-const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) => {
+const EditBeneficiaryCard: React.FC<{ customerId?: string }> = ({ customerId }) => {
     const { data: session, status } = useSession();
     const { showNotification } = useNotificationContext();
     const loadingSession = status === "loading";
@@ -48,18 +49,21 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
     const [showGlobalLoader, setShowGlobalLoader] = useState(false);
 
 
+
+    const url = customerId ? `${API_ENDPOINTS.BENEFICIARIES_V3}/${customerId}/one` : undefined;
+    const requestUrl = url ?? "";
     const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
-        customerId ? `${API_ENDPOINTS.BENEFICIARIES_V3}/${customerId}/one` : null
+        requestUrl
     );
-    const { data: countries = [] } = useFetchData<any[]>(API_ENDPOINTS.COUNTRIES);
+    const { data: countriesResponse } = useFetchData<ResponseApi<Country>>(API_ENDPOINTS.COUNTRIES);
 
-
+    const countries = countriesResponse?.data ?? [];
     // 🧩 Remplissage automatique du formulaire
     useEffect(() => {
-        if (customer_?.data && countries?.data) {
+        if (customer_?.data && countries) {
             const c = customer_.data;
 
-            const country = countries.data.find((x: any) => x.id === c.country_id);
+            const country = countries.find((x: any) => x.id === c.country_id);
             setSelectedCountry(country ? { value: country.id, label: country.name } : null);
             setSelectTypeAccount(c.type || "P");
 
@@ -102,7 +106,7 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
                     alignItems: "center",
                 }}
             >
-                <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
+                <Spinner type="bordered" color="primary" style={{ width: "3rem", height: "3rem" }} />
                 <p className="mt-3 text-muted">Chargement des détails du client...</p>
             </div>
         );
@@ -169,7 +173,7 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
                         flexDirection: "column",
                     }}
                 >
-                    <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
+                    <Spinner type='bordered'  color="primary" style={{ width: "3rem", height: "3rem" }} />
                     <p className="mt-3 text-muted fw-semibold">Mise à jour en cours...</p>
                 </div>
             )}
@@ -199,7 +203,7 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
                             <Select
                                 isClearable
                                 value={selectedCountry}
-                                options={(countries?.data || []).map((c: any) => ({
+                                options={(countries || []).map((c: any) => ({
                                     value: c.id,
                                     label: c.name,
                                     code:c.code_iso
@@ -418,7 +422,7 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
                     <Button variant="primary" onClick={handleUpdate} disabled={loadingSubmit}>
                         {loadingSubmit ? (
                             <>
-                                <Spinner size="sm" animation="border" className="me-2" /> Mise à jour...
+                                <Spinner size="sm" type="bordered" className="me-2" /> Mise à jour...
                             </>
                         ) : (
                             <>

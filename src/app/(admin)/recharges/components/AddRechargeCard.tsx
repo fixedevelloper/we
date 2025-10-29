@@ -12,6 +12,7 @@ import API_ENDPOINTS from "../../../(other)/api/Constant";
 import {useFetchData} from "../../../../hooks/useFetchData";
 import {useSession} from "next-auth/react";
 import Feedback from "react-bootstrap/Feedback";
+import {Country, ResponseApi} from "../../../../types/data";
 
 
 
@@ -28,12 +29,13 @@ const AddRechargeCard: React.FC = () => {
     const [validated, setValidated] = useState(false)
     const userId = session?.user?.id;
 
-    const {data: countries = []} = useFetchData<any[]>(
-        API_ENDPOINTS.COUNTRIES
-    );
+    const { data: countriesResponse } = useFetchData<ResponseApi<Country>>(API_ENDPOINTS.COUNTRIES);
 
+    const countries = countriesResponse?.data ?? [];
+    const url = userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : undefined;
+    const requestUrl = url ?? "";
     const {data: senders = []} = useFetchData<any[]>(
-        userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : null
+        requestUrl
     );
 
 
@@ -77,7 +79,7 @@ const AddRechargeCard: React.FC = () => {
                                 required
                                 className="select2"
                                 isClearable
-                                options={[{ value: "", label: "Sélectionner" }, ...(countries?.data || []).map((c: any) => ({ value: c.id, label: c.name, currency: c.currency }))]}
+                                options={[{ value: "", label: "Sélectionner" }, ...(countries || []).map((c: any) => ({ value: c.id, label: c.name, currency: c.currency }))]}
                                 onChange={(option) => setSelectedCountry(option)}
                                 value={selectedCountry}
                             />

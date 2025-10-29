@@ -4,9 +4,10 @@ type SpinnerProps = {
   tag?: React.ElementType
   className?: string
   size?: 'lg' | 'md' | 'sm'
-  type?: 'bordered' | 'grow'
+  type?: 'bordered' | 'grow' | 'border'
   color?: string
-  children?: React.ReactNode
+  children?: React.ReactNode,
+  style?:{}
 }
 
 const Spinner = ({ tag = 'div', type = 'bordered', className, color, size, children }: SpinnerProps) => {

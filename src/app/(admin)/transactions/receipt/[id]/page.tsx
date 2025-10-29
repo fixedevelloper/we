@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import TransactionReceipt from "../../TransactionReceipt";
 
 
-const ReceiptPage = () => {
+const ReceiptPage = (transaction) => {
     const { id } = useParams();
 
     useEffect(() => {
@@ -18,7 +18,7 @@ const ReceiptPage = () => {
 
     return (
         <div className="print-receipt-container">
-            {transaction && <TransactionReceipt transaction={transaction} />}
+            {transaction && <TransactionReceipt transaction={transaction}  onClose={} show/>}
 
         </div>
     );
