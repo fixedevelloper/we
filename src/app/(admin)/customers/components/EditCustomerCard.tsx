@@ -39,7 +39,7 @@ const EditCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) => {
     const [showReceipt, setShowReceipt] = useState(false);
     const [selectTypeAccount, setSelectTypeAccount] =useState<any>(null);
 
-    const { data: customer_, isLoading } = useFetchData<{ data: Customer }>(
+    const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
         customerId ? `${API_ENDPOINTS.CUSTOMERS}/${customerId}` : null
     );
 

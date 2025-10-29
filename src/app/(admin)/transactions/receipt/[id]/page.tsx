@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
-import DetailTransactionCard from "../../components/DetailTransactionCard";
 import TransactionReceipt from "../../TransactionReceipt";
 
 

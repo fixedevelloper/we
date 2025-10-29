@@ -37,7 +37,7 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
     const loadingSession = status === "loading";
     const [showReceipt, setShowReceipt] = useState(false);
 
-    const { data: customer_, isLoading } = useFetchData<{ data: Customer }>(
+    const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
         customerId ? `${API_ENDPOINTS.CUSTOMERS}/${customerId}` : null
     );
 

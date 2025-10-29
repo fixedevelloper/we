@@ -48,7 +48,7 @@ const EditBeneficiaryCard: React.FC<{ customerId: string }> = ({ customerId }) =
     const [showGlobalLoader, setShowGlobalLoader] = useState(false);
 
 
-    const { data: customer_, isLoading } = useFetchData<{ data: Customer }>(
+    const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
         customerId ? `${API_ENDPOINTS.BENEFICIARIES_V3}/${customerId}/one` : null
     );
     const { data: countries = [] } = useFetchData<any[]>(API_ENDPOINTS.COUNTRIES);

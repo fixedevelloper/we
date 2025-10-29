@@ -17,7 +17,7 @@ const DetailTransactionCard: React.FC<{ transactionId: string }> = ({ transactio
     const { data: session, status } = useSession();
     const loadingSession = status === "loading";
     const [showReceipt, setShowReceipt] = useState(false);
-    const { data: transaction_, isLoading } = useFetchData<any>(
+    const { data: transaction_, loading:isLoading } = useFetchData<any>(
         transactionId ? `${API_ENDPOINTS.TRANSACTIONS}/detail/${transactionId}` : null
     );
 
