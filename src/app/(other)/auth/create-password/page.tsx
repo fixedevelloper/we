@@ -35,7 +35,7 @@ const CreatePasswordPage = () => {
               </Link>
             </p>
             <p className="mt-auto mb-0">
-              {currentYear} © Abstack - By <span className="fw-bold text-decoration-underline text-uppercase text-reset fs-12">{developedBy}</span>
+              {currentYear} © Wetransfert cash - By <span className="fw-bold text-decoration-underline text-uppercase text-reset fs-12">{developedBy}</span>
             </p>
           </Card>
         </Col>

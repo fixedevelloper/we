@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Dropdown, DropdownHeader, DropdownItem, DropdownMenu, DropdownToggle } from 'react-bootstrap'
 import {useSession} from "next-auth/react";
-
+import { signOut } from "next-auth/react";
 const ProfileDropdown = () => {
   const {data: session, status} = useSession();
   const user = session?.user;
@@ -47,7 +47,7 @@ const ProfileDropdown = () => {
             <IconifyIcon icon="ri:lock-line" className="me-1 fs-16 align-middle" />
             <span className="align-middle">Lock Screen</span>
           </DropdownItem>
-          <DropdownItem as={Link} href="/auth/logout" className="active fw-semibold text-danger">
+          <DropdownItem  onClick={() => signOut({ callbackUrl: "/" })} className="active fw-semibold text-danger">
             <IconifyIcon icon="ri:logout-box-line" className="me-1 fs-16 align-middle" />
             <span className="align-middle">Sign Out</span>
           </DropdownItem>

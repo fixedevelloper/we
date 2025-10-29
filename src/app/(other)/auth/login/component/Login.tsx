@@ -4,9 +4,13 @@ import logo from '@/assets/images/logo.png'
 import { currentYear } from '@/context/constants'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Card, Col, Row } from 'react-bootstrap'
+import {Button, Card, Col, Row} from 'react-bootstrap'
 import useSignIn from './useSignIn'
 import TextFormInput from '@/components/form/TextFormInput'
+import {developedBy} from "../../../../../context/constants";
+import Spinner from "../../../../../components/Spinner";
+import IconifyIcon from "../../../../../components/wrappers/IconifyIcon";
+import React from "react";
 
 const Login = () => {
   const { loading, login, control } = useSignIn()
@@ -53,19 +57,22 @@ const Login = () => {
               </div>
               <div className="d-grid">
                 <button disabled={loading} className="btn btn-primary fw-semibold" type="submit">
-                  Login
+                  {loading ? (
+                      <>
+                        <Spinner size="sm" color="light" className="me-2" /> Login...
+                      </>
+                  ) : (
+                      <>
+                        <IconifyIcon icon="ri:edit-2-line" className="me-1" /> Login
+                      </>
+                  )}
                 </button>
+
               </div>
             </form>
-            <p className="text-muted fs-14 mb-4">
-              Don't have an account?
-              <Link href="/auth/register" className="fw-semibold text-danger ms-1">
-                Sign Up !
-              </Link>
-            </p>
           </Card>
           <p className=" mt-4 text-center mb-0">
-            {currentYear} © Abstack - By <span className="fw-bold text-decoration-underline text-uppercase text-reset fs-12">Coderthemes</span>
+            {currentYear} © Wetransfert cash - By <span className="fw-bold text-decoration-underline text-uppercase text-reset fs-12">{developedBy}</span>
           </p>
         </Col>
       </Row>
