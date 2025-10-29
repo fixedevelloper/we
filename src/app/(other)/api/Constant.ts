@@ -1,4 +1,5 @@
-const BASE_URL='http://localhost:8000'
+const BASE_URL='https://wetransfercashapi.agensic.com'
+//const BASE_URL='http://localhost:8000'
 const API_ENDPOINTS = {
     AUTH:`${BASE_URL}/auth/login`,
     TRANSACTIONS: `${BASE_URL}/v3/transactions`,
