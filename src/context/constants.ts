@@ -4,9 +4,9 @@ export const currency: CurrencyType = '$'
 
 export const currentYear = new Date().getFullYear()
 
-export const developedByLink = 'https://creativsoft.com/'
+export const developedByLink = 'https://agensic.com/'
 
-export const developedBy = 'Creativ solutions'
+export const developedBy = 'Agensic solutions'
 
 export const contactUs = 'rodriguembah@gmail.com'
 
