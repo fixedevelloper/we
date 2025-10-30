@@ -18,7 +18,7 @@ const NewUser = () => {
         <Col xxl={4}>
           <Card>
             <CardHeader className="d-flex flex-wrap align-items-center gap-2">
-              <h4 className="header-title me-auto">Recent New Users</h4>
+              <h4 className="header-title me-auto">Utilisateurs récents</h4>
               <div className="d-flex gap-2 justify-content-end text-end">
                 <Link href="" className="btn btn-sm btn-light">
                   Import <IconifyIcon icon="ri:download-line" className="ms-1" />
@@ -97,7 +97,7 @@ const NewUser = () => {
                         </div>
                       </td>
                       <td>
-                        <h5 className="fs-14 mt-1 fw-normal">Editor</h5>
+                        <h5 className="fs-14 mt-1 fw-normal">Customer</h5>
                       </td>
                       <td>
                         <h5 className="fs-14 mt-1 fw-normal">
@@ -135,7 +135,7 @@ const NewUser = () => {
                         </div>
                       </td>
                       <td>
-                        <h5 className="fs-14 mt-1 fw-normal">Viewer</h5>
+                        <h5 className="fs-14 mt-1 fw-normal">Customer</h5>
                       </td>
                       <td>
                         <h5 className="fs-14 mt-1 fw-normal">
@@ -173,7 +173,7 @@ const NewUser = () => {
                         </div>
                       </td>
                       <td>
-                        <h5 className="fs-14 mt-1 fw-normal">Manager</h5>
+                        <h5 className="fs-14 mt-1 fw-normal">Agent</h5>
                       </td>
                       <td>
                         <h5 className="fs-14 mt-1 fw-normal">
@@ -211,7 +211,7 @@ const NewUser = () => {
                         </div>
                       </td>
                       <td>
-                        <h5 className="fs-14 mt-1 fw-normal">Support</h5>
+                        <h5 className="fs-14 mt-1 fw-normal">Customer</h5>
                       </td>
                       <td>
                         <h5 className="fs-14 mt-1 fw-normal">
@@ -269,9 +269,9 @@ const NewUser = () => {
         <Col xxl={4}>
           <Card>
             <div className="d-flex card-header justify-content-between align-items-center border-bottom border-dashed">
-              <h4 className="header-title">Transactions</h4>
-              <Link href="" className="btn btn-sm btn-light">
-                Add New <IconifyIcon icon="ri:add-line" className="ms-1" />
+              <h4 className="header-title">Transferts</h4>
+              <Link href="transactions/add-transaction" className="btn btn-sm btn-light">
+                Ajouter <IconifyIcon icon="ri:add-line" className="ms-1" />
               </Link>
             </div>
             <SimplebarReactClient className="card-body" style={{ height: 400 }}>
@@ -396,7 +396,7 @@ const NewUser = () => {
         <Col xxl={4}>
           <Card>
             <CardHeader className="d-flex flex-wrap align-items-center gap-2 border-bottom border-dashed">
-              <h4 className="header-title me-auto">Transactions Uses</h4>
+              <h4 className="header-title me-auto">Recharges</h4>
               <div className="d-flex gap-2 justify-content-end text-end">
                 <Link href="" className="btn btn-sm btn-primary">
                   Refresh <IconifyIcon icon="ri:reset-right-line" className="ms-1" />
@@ -407,14 +407,14 @@ const NewUser = () => {
               <ul className="list-unstyled transaction-list mb-0">
                 <li className="px-3 py-2 d-flex align-items-center">
                   <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">Advertising</span>
-                  <span className="text-success tran-price">+$230</span>
+                  <span className="tran-text">R. Gameni</span>
+                  <span className="text-success tran-price">230 FCFA</span>
                   <span className="text-muted ms-auto">07/09/2017</span>
                 </li>
                 <li className="px-3 py-2 d-flex align-items-center">
                   <ArrowBigUp className="fs-20 text-danger" />
-                  <span className="tran-text">Support licence</span>
-                  <span className="text-danger tran-price">-$965</span>
+                  <span className="tran-text">Kamni hugues</span>
+                  <span className="text-danger tran-price">96500 FCFA </span>
                   <span className="text-muted ms-auto">07/09/2017</span>
                 </li>
                 <li className="px-3 py-2 d-flex align-items-center">
@@ -425,62 +425,8 @@ const NewUser = () => {
                 </li>
                 <li className="px-3 py-2 d-flex align-items-center">
                   <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">Advertising</span>
-                  <span className="text-success tran-price">+$230</span>
-                  <span className="text-muted ms-auto">05/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigUp className="fs-20 text-danger" />
-                  <span className="tran-text">New plugins added</span>
-                  <span className="text-danger tran-price">-$452</span>
-                  <span className="text-muted ms-auto">05/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">Google Inc.</span>
-                  <span className="text-success tran-price">+$230</span>
-                  <span className="text-muted ms-auto">04/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigUp className="fs-20 text-danger" />
-                  <span className="tran-text">Facebook Ad</span>
-                  <span className="text-danger tran-price">-$364</span>
-                  <span className="text-muted ms-auto">03/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">New sale</span>
-                  <span className="text-success tran-price">+$230</span>
-                  <span className="text-muted ms-auto">03/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">Advertising</span>
-                  <span className="text-success tran-price">+$230</span>
-                  <span className="text-muted ms-auto">29/08/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigUp className="fs-20 text-danger" />
-                  <span className="tran-text">Support licence</span>
-                  <span className="text-danger tran-price">-$854</span>
-                  <span className="text-muted ms-auto">27/08/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">Google Inc.</span>
-                  <span className="text-success tran-price">+$230</span>
-                  <span className="text-muted ms-auto">04/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigUp className="fs-20 text-danger" />
-                  <span className="tran-text">Facebook Ad</span>
-                  <span className="text-danger tran-price">-$364</span>
-                  <span className="text-muted ms-auto">03/09/2017</span>
-                </li>
-                <li className="px-3 py-2 d-flex align-items-center">
-                  <ArrowBigDown className="fs-20 text-success" />
-                  <span className="tran-text">New sale</span>
-                  <span className="text-success tran-price">+$230</span>
+                  <span className="tran-text">Gaeel Mpoussa</span>
+                  <span className="text-success tran-price">23000 FCFA</span>
                   <span className="text-muted ms-auto">03/09/2017</span>
                 </li>
               </ul>

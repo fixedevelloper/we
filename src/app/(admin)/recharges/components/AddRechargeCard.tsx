@@ -69,7 +69,7 @@ const AddRechargeCard: React.FC = () => {
     return (
         <Row className="justify-content-center">
             <Col lg={8}>
-                <ComponentContainerCard title="Ajouter une transaction">
+                <ComponentContainerCard title="Ajouter une recharge">
                     <Form className="needs-validation" noValidate validated={validated} onSubmit={handleSubmit}>
                     <Row>
                         {/* Pays */}
@@ -92,7 +92,7 @@ const AddRechargeCard: React.FC = () => {
                             <label className="form-label">Client</label>
                             <Select
                                 className="select2"
-                                options={(senders || []).map((s: any) => ({ value: s.id, label: `${s.first_name} ${s.last_name}`, type: s.type }))}
+                                options={(senders || []).map((s: any) => ({ value: s.id, label: `${s.name}`, type: s.type }))}
                                 onChange={(option) => setSelectedSender(option)}
                                 value={selectedSender}
                             />

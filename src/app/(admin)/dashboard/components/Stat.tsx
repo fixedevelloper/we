@@ -72,7 +72,7 @@ const Stat = () => {
               <div className="d-flex align-items-start gap-2 justify-content-between">
                 <div>
                   <h5 className="text-muted fs-13 fw-bold text-uppercase" title="New Customers">
-                    New Customers
+                    Nouveau clients
                   </h5>
                   <h3 className="mt-2 mb-1 fw-bold">1.2k</h3>
                   <p className="mb-0 text-muted">

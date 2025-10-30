@@ -66,13 +66,15 @@ export const StepOne: React.FC<StepOneProps> = ({
     const [selectedCity, setSelectedCity] = useState<any>(null);
     const [comment, setComment] = useState<any>(null);
     const shouldFetchRelations = selectedSender && selectedBeneficiary;
-    const { data: relactionsResponse } = useFetchData<ResponseApi<any>>(
+
+    const { data: relactionsResponse , refetch: refetchRelaction,} = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {sender_type: selectedSender.type, beneficiary_type: selectedBeneficiary.type, service: "relaction"}
             : {}
     );
 const relations=relactionsResponse?.data?? [];
+
     useEffect(() => {
         if (selectedCountry && refetchCities) refetchCities();
     }, [selectedCountry]);
@@ -88,6 +90,15 @@ const relations=relactionsResponse?.data?? [];
         loading: beneficiariesLoading,
         refetch: refetchBeneficiaries,
     } = useFetchData<any>(beneficiantEndpoint || "", {}, {});
+
+    useEffect(() => {
+        if (selectedSender && refetchBeneficiaries) refetchBeneficiaries();
+    }, [selectedSender]);
+
+    useEffect(() => {
+        if (shouldFetchRelations) refetchRelaction();
+    }, [shouldFetchRelations]);
+
     // ✅ Mettre à jour stepOneData à chaque changement
     useEffect(() => {
         setStepOneData({
@@ -220,7 +231,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     const shouldFetchRelations = selectedSender && selectedBeneficiary;
     const url = selectCountry ? `${API_ENDPOINTS.BANKLIST}/${selectCountry.value}` : undefined;
     const requestUrl = url ?? "";
-    const {data: banks = {data: []}, loading: banksLoading} = useFetchData<any>(requestUrl);
+    const {data: banks = {data: []}, loading: banksLoading,refetch:refechBank} = useFetchData<any>(requestUrl);
     const urlTaux = selectCountry ? `${API_ENDPOINTS.TAUXEXCHANGE}/${selectCountry.value}` : undefined;
     const requestUrlTaux = urlTaux ?? "";
     const {data: taux = {data: {}}, refetch} = useFetchData<any>(requestUrlTaux, {amount});
@@ -251,7 +262,9 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     useEffect(() => {
         if (selectCountry?.value && refetch) refetch({amount});
     }, [amount, selectCountry, refetch]);
-
+    useEffect(()=>{
+        refechBank()
+    },[selectCountry])
     // 🔹 Calcul frais et XAF
     useEffect(() => {
         if (!taux?.data) return;
@@ -671,7 +684,7 @@ const AddTransactionCard: React.FC = () => {
                                 <a
                                     href={`#basictab${idx + 1}`}
                                     className={`nav-link rounded-0 py-2 ${activeStep === idx + 1 ? "active" : ""}`}
-                                    onClick={() => goToStep(idx + 1)}
+                                  //  onClick={() => goToStep(idx + 1)}
                                 >
                                     <IconifyIcon
                                         icon={["bi:person-circle", "bi:emoji-smile", "bi:check2-circle"][idx]}

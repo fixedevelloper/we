@@ -61,7 +61,7 @@ export const salesChart: ApexOptions = {
 export const productChart: ApexOptions = {
   series: [
     {
-      name: 'Expenses',
+      name: 'Transferts',
       data: [30, 60, 35, 80, 50, 25, 70, 55],
     },
   ],
@@ -118,7 +118,7 @@ export const productChart: ApexOptions = {
 export const customerschart: ApexOptions = {
   series: [
     {
-      name: 'Investments',
+      name: 'Recharges',
       data: [20, 40, 25, 50, 35, 15, 45, 30],
     },
   ],
@@ -263,11 +263,11 @@ export const statisChart: ApexOptions = {
 export const revenueChart: ApexOptions = {
   series: [
     {
-      name: 'Conversion Rate',
+      name: 'Transferts',
       data: [45, 60, -20, 60, 0, 45, -80, 65, -30, 58], // Example data
     },
     {
-      name: 'Average Sale Value',
+      name: 'Recharges',
       data: [-80, 60, 80, -40, 15, 60, -40, 80, -50, 2], // Example data
     },
   ],

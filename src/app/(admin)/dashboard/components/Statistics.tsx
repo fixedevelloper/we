@@ -77,21 +77,21 @@ const Statistics = () => {
               <div className="border-top border-bottom border-light border-dashed">
                 <Row className="text-center align-items-center">
                   <Col md={4}>
-                    <p className="text-muted mt-3 mb-1">Revenue</p>
+                    <p className="text-muted mt-3 mb-1">Recharges</p>
                     <h4 className="mb-3">
                       <IconifyIcon icon="ri:arrow-left-down-box-line" className="text-success me-1" />
                       <span>$29.5k</span>
                     </h4>
                   </Col>
                   <Col md={4} className="border-start border-light border-dashed">
-                    <p className="text-muted mt-3 mb-1">Expenses</p>
+                    <p className="text-muted mt-3 mb-1">Transferts</p>
                     <h4 className="mb-3">
                       <IconifyIcon icon="ri:arrow-left-up-box-line" className=" text-danger me-1" />
                       <span>$15.07k</span>
                     </h4>
                   </Col>
                   <Col md={4} className="border-start border-end border-light border-dashed">
-                    <p className="text-muted mt-3 mb-1">Investment</p>
+                    <p className="text-muted mt-3 mb-1">Revenues</p>
                     <h4 className="mb-3">
                       <IconifyIcon icon="ri:bar-chart-line" className="me-1" />
                       <span>$3.6k</span>
