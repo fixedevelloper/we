@@ -236,7 +236,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     const requestUrlTaux = urlTaux ?? "";
     const {data: taux = {data: {}}, refetch} = useFetchData<any>(requestUrlTaux, {amount});
     // 🔹 Fetch des relations
-    const {data: origin_fondsResponse} = useFetchData<ResponseApi<any>>(
+    const {data: origin_fondsResponse,refetch:refreshOrigins} = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {
@@ -247,7 +247,7 @@ export const StepTwo: React.FC<StepTwoProps> = ({
             : {}
     );
     const origin_fonds=origin_fondsResponse?.data?? [];
-    const {data: raisonsResponse} = useFetchData<ResponseApi<any>>(
+    const {data: raisonsResponse,refetch:refreshRaisons} = useFetchData<ResponseApi<any>>(
         shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
         shouldFetchRelations
             ? {
@@ -265,6 +265,9 @@ export const StepTwo: React.FC<StepTwoProps> = ({
     useEffect(()=>{
         refechBank()
     },[selectCountry])
+    useEffect(() => {
+        if (shouldFetchRelations) refreshRaisons() ;refreshOrigins();
+    }, [shouldFetchRelations]);
     // 🔹 Calcul frais et XAF
     useEffect(() => {
         if (!taux?.data) return;

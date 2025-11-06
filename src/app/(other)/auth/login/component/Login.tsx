@@ -14,6 +14,7 @@ import React from "react";
 
 const Login = () => {
   const { loading, login, control } = useSignIn()
+  //console.log(loading)
   return (
     <div className="auth-bg d-flex min-vh-100 justify-content-center align-items-center">
       <Row className="g-0 justify-content-center w-100 m-xxl-5 px-xxl-4 m-3">

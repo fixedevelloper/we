@@ -169,8 +169,8 @@ const RechargesCard: React.FC = () => {
                       <td><span className="fs-15 text-muted">{t.country_name || "-"}</span></td>
                       <td>
                         <span
-                            className={`badge bg-${t.status == 'en validation' ? 'warning' : t.status == 'en attente' ? 'primary' : t.status == 'echoue' ? 'danger' : 'success'}-subtle text-${t.status == 'en validation' ? 'warning' : t.status == 'Pending' ? 'primary' : t.status == 'echoue' ? 'danger' : 'success'} fs-12 p-1`}>
-                      {t.status}
+                            className={`badge bg-${t.status == 'en validation' ? 'warning' : t.status == 'en attente' ? 'primary' : t.status == '0' ? 'danger' : 'success'}-subtle text-${t.status == 'en validation' ? 'warning' : t.status == 'Pending' ? 'primary' : t.status == 'echoue' ? 'danger' : 'success'} fs-12 p-1`}>
+                      {t.status == 'echoue' ? 'danger' : 'success'}
                     </span>
                       </td>
                       <td className="pe-3">

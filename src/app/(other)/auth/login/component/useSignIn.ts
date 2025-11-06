@@ -31,21 +31,38 @@ const useSignIn = () => {
   type LoginFormFields = yup.InferType<typeof loginFormSchema>
 
   const login = handleSubmit(async (values: LoginFormFields) => {
-    setLoading(true)
-    signIn('credentials', {
-      redirect: false,
-      email: values?.email,
-      password: values?.password,
-    }).then((res) => {
+    try {
+      setLoading(true);
+
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: values.email,
+        password: values.password,
+      });
+
       if (res?.ok) {
-        push(queryParams['redirectTo'] ?? '/dashboard')
-        showNotification({ message: 'Connexion réussie. Redirection en cours...', variant: 'success' })
+        push(queryParams["redirectTo"] ?? "/dashboard");
+        showNotification({
+          message: "Connexion réussie. Redirection en cours...",
+          variant: "success",
+        });
       } else {
-        showNotification({ message: res?.error ?? '', variant: 'danger' })
+        showNotification({
+          message: res?.error ?? "Identifiants incorrects",
+          variant: "danger",
+        });
       }
-    })
-    setLoading(false)
-  })
+    } catch (err) {
+      console.error(err);
+      showNotification({
+        message: "Erreur de connexion. Veuillez réessayer.",
+        variant: "danger",
+      });
+    } finally {
+      setLoading(false);
+    }
+  });
+
 
   return { loading, login, control }
 }
