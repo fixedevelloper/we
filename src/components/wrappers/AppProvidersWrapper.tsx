@@ -7,9 +7,6 @@ import { ChildrenType } from '../../types/component-props'
 import "react-toastify/dist/ReactToastify.css";
 import React from "react";
 
-type ChildrenType = {
-  children: React.ReactNode;
-};
 
 // 🔹 Loader personnalisé affiché pendant le chargement du LayoutProvider
 const PageLoader = () => (

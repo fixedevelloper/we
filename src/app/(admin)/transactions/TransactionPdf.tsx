@@ -2,17 +2,17 @@ import { Modal, Button } from "react-bootstrap";
 import React, { useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
 interface Transaction {
     id: number;
     typetransaction: string;
-    customer: string;
-    beneficiare: string;
-    montanttotal: number | null;
-    montant: number | null;
-    monaire?: string;
     datetransaction: string;
-    status: string;
+    beneficiare?: string;
+    customer?: string;
+    montanttotal?: number;
+    montant?: number;
+    monaire?: string;
+    country?: string;
+    status?: string;
 }
 
 interface TransactionPdfProps {
@@ -41,17 +41,16 @@ export default function TransactionPdfModal({
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
 
-        // Capture du contenu (div en image)
+        // Capture du contenu de la div
         const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#fff" });
         const imgData = canvas.toDataURL("image/png");
 
-        // Taille de l'image dans le PDF
+        // Dimensions de l’image dans le PDF
         const imgWidth = pageWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
         let heightLeft = imgHeight;
         let position = 0;
-        let page = 1;
 
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
@@ -61,11 +60,10 @@ export default function TransactionPdfModal({
             pdf.addPage();
             pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
-            page++;
         }
 
-        // 🔹 Ajout pagination
-        const totalPages = pdf.internal.getNumberOfPages();
+        // ✅ Pagination
+        const totalPages = pdf.getNumberOfPages(); // <— CORRECTION
         for (let i = 1; i <= totalPages; i++) {
             pdf.setPage(i);
             pdf.setFontSize(10);
@@ -74,6 +72,48 @@ export default function TransactionPdfModal({
 
         pdf.save(`transactions_${new Date().toISOString().slice(0, 10)}.pdf`);
     };
+
+    /*   const generatePDF = async () => {
+           const element = receiptRef.current;
+           if (!element) return;
+
+           const pdf = new jsPDF("p", "mm", "a4");
+           const pageWidth = pdf.internal.pageSize.getWidth();
+           const pageHeight = pdf.internal.pageSize.getHeight();
+
+           // Capture du contenu (div en image)
+           const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#fff" });
+           const imgData = canvas.toDataURL("image/png");
+
+           // Taille de l'image dans le PDF
+           const imgWidth = pageWidth;
+           const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+           let heightLeft = imgHeight;
+           let position = 0;
+           let page = 1;
+
+           pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+           heightLeft -= pageHeight;
+
+           while (heightLeft > 0) {
+               position = heightLeft - imgHeight;
+               pdf.addPage();
+               pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+               heightLeft -= pageHeight;
+               page++;
+           }
+
+           // 🔹 Ajout pagination
+           const totalPages = pdf.internal.getPageCount();
+           for (let i = 1; i <= totalPages; i++) {
+               pdf.setPage(i);
+               pdf.setFontSize(10);
+               pdf.text(`Page ${i} / ${totalPages}`, pageWidth - 35, pageHeight - 10);
+           }
+
+           pdf.save(`transactions_${new Date().toISOString().slice(0, 10)}.pdf`);
+       };*/
 
     /** 🔹 Calcul du total global */
     const totalGlobal = transactions.reduce(
@@ -159,7 +199,7 @@ export default function TransactionPdfModal({
                                     </td>
                                     <td>
                       <span
-                          className={`status ${t.status.toLowerCase().replace(/\s/g, "-")}`}
+                          className={`status ${t.status?.toLowerCase().replace(/\s/g, "-")}`}
                       >
                         {t.status}
                       </span>

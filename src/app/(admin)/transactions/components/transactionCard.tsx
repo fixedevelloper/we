@@ -32,6 +32,7 @@ interface Transaction {
   beneficiare?: string;
   customer?: string;
   montanttotal?: number;
+  montant?: number;
   monaire?: string;
   country?: string;
   status?: string;
