@@ -48,7 +48,7 @@ export const options: NextAuthOptions = {
             name: result.data.name,
             email: result.data.email,
             token: result.data.token,
-            role: result.data.roles,
+            roles: result.data.roles,
             photoURL: result.data.photoURL,
             otpSend: result.data.otpSend,
             emailVerified: result.data.emailVerified,

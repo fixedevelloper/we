@@ -8,6 +8,7 @@ import { signOut } from "next-auth/react";
 const ProfileDropdown = () => {
   const {data: session, status} = useSession();
   const user = session?.user;
+  console.log(user)
   return (
     <div className="topbar-item nav-user">
       <Dropdown>

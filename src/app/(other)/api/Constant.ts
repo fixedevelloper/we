@@ -1,7 +1,7 @@
-const BASE_URL='https://wetransfercashapi.agensic.com'
-//const BASE_URL='http://localhost:8000'
+//const BASE_URL='https://wetransfercashapi.agensic.com'
+const BASE_URL='http://localhost:8000'
 const API_ENDPOINTS = {
-    AUTH:`${BASE_URL}/auth/login`,
+    AUTH:`${BASE_URL}/auth/v3/login`,
     TRANSACTIONS: `${BASE_URL}/v3/transactions`,
     TRANSACTIONS_CREATE: `${BASE_URL}/v2/transferts`,
     RECHARGES: `${BASE_URL}/v3/recharges`,
@@ -19,6 +19,8 @@ const API_ENDPOINTS = {
     BENEFICIARIES_V3: `${BASE_URL}/v3/beneficiaries`,
     SENDERS_V3: `${BASE_URL}/v3/senders`,
     USERS: `${BASE_URL}/v3/users`,
+     CONNEXIONS: `${BASE_URL}/v3/connexions`,
+      AUDITS: `${BASE_URL}/v3/audits`,
 };
 
 export default API_ENDPOINTS;
