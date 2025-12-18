@@ -22,7 +22,9 @@ interface Token {
 
 
 interface TokenResponse {
-  data: Token[];
+  data: {
+    data: Token[]
+  };
   meta: {
     page: number;
     limit: number;
@@ -53,9 +55,9 @@ const WebTokenCard: React.FC = () => {
     refetch?.({ page, limit, search: debouncedSearch });
   }, [page, limit, debouncedSearch, refetch]);
 
-  const response = data?.data;
-  const tokens = Array.isArray(response?.data) ? response.data : [];
-  const meta = response?.meta;
+  const tokens = data?.data.data ?? [];
+  const meta = data?.meta;
+
 
 
   const formatDate = (date?: string) =>
