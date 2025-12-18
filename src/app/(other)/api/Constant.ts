@@ -21,6 +21,7 @@ const API_ENDPOINTS = {
     USERS: `${BASE_URL}/v3/users`,
      CONNEXIONS: `${BASE_URL}/v3/connexions`,
       AUDITS: `${BASE_URL}/v3/audits`,
+    WEBTOKENS: `${BASE_URL}/v3/webtokens`,
 };
 
 export default API_ENDPOINTS;

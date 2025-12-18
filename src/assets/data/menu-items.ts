@@ -1,9 +1,11 @@
 import { MenuItemType } from '@/types/menu'
-import { Airplay, Box, Calendar, ChartNoAxesColumn,
-  CircleAlert, Disc, File, FileText, LayoutGrid,Wallet2,LucideGlobe2,
-  Mail, Map, Paintbrush, Share, Sparkles, Table, Users, 
-  LucideAlertOctagon,
-  LucideCone} from 'lucide-react'
+import {
+  Airplay, Box, Calendar, ChartNoAxesColumn,
+  CircleAlert, Disc, File, FileText, LayoutGrid, Wallet2, LucideGlobe2,
+  Mail, Map, Paintbrush, Share, Sparkles, Table, Users,
+  LucideAlertOctagon, BringToFront,
+  LucideCone, PlusCircleIcon
+} from 'lucide-react'
 
 
 export const MENU_ITEMS: MenuItemType[] = [
@@ -76,6 +78,26 @@ export const MENU_ITEMS: MenuItemType[] = [
     label: 'Employes',
     icon: Users,
     url: '/employes',
+    roles: []
+  },
+  {
+    key: 'webtoken',
+    label: 'Manage token',
+    isTitle: true,
+    roles: []
+  },
+  {
+    key: 'webtoken',
+    label: 'Tokens',
+    icon: BringToFront,
+    url: '/manage-token',
+    roles: []
+  },
+  {
+    key: 'webtokenadd',
+    label: 'Ajouter un token',
+    icon: PlusCircleIcon,
+    url: '/manage-token/add',
     roles: []
   },
   {
