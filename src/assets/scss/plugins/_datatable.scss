@@ -32,12 +32,13 @@ table.dataTable {
         }
     }
 
-    thead:not.table-light {
+    thead:not(.table-light) {
         th {
             background-color: transparent;
             border-bottom-color: var(--#{$prefix}border-color);
         }
     }
+
 
     tbody {
 
