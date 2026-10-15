@@ -156,12 +156,12 @@ const SenderPage: React.FC = () => {
                                                     Modifier
                                                 </DropdownItem>
                                                 {s.piece_face_file && (
-                                                    <DropdownItem as={Link} href={s.piece_face_file} target="_blank">
+                                                    <DropdownItem as={Link} href={s.piece_face_file} target="_blank" rel="noopener noreferrer">
                                                         Voir pièce (face)
                                                     </DropdownItem>
                                                 )}
                                                 {s.piece_recto_file && (
-                                                    <DropdownItem as={Link} href={s.piece_recto_file} target="_blank">
+                                                    <DropdownItem as={Link} href={s.piece_recto_file} target="_blank" rel="noopener noreferrer">
                                                         Voir pièce (recto)
                                                     </DropdownItem>
                                                 )}

@@ -2,7 +2,7 @@
 import type { ChildrenType } from '@/types/component-props'
 import { useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import FallbackLoading from '../FallbackLoading'
 
 const AuthProtectionWrapper = ({ children }: ChildrenType) => {
@@ -10,8 +10,14 @@ const AuthProtectionWrapper = ({ children }: ChildrenType) => {
   const { push } = useRouter()
   const pathname = usePathname()
 
-  if (status == 'unauthenticated') {
-    push(`/auth/login?redirectTo=${pathname}`)
+  // Redirection en effet (jamais pendant le rendu), chemin encodé pour éviter l'injection de paramètres.
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      push(`/auth/login?redirectTo=${encodeURIComponent(pathname)}`)
+    }
+  }, [status, pathname, push])
+
+  if (status === 'unauthenticated') {
     return <FallbackLoading />
   }
 

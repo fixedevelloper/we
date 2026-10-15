@@ -24,8 +24,6 @@ const MenuItemWithChildren = ({ item, className, activeMenuItems, toggleMenu, le
     setOpen(!open)
   };
 
-  console.log(open)
-
   return (
     <Tag className={`${className} dropdown ${activeMenuItems!.includes(item.key) ? 'active' : ''}`}>
       <Link

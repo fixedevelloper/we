@@ -115,7 +115,7 @@ const TransactionsCard: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
-    console.log("Supprimer", id);
+    void id;
   };
 
   // 🔹 Appliquer le filtre

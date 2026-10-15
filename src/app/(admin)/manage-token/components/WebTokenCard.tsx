@@ -74,8 +74,6 @@ const WebTokenCard: React.FC = () => {
         return <span className="badge bg-light text-dark">-</span>;
     }
   };
-  console.log("API response:", data);
-  console.log("Tokens:", data?.data);
 
   return (
       <Card>

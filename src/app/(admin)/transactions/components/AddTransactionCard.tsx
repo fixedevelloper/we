@@ -446,7 +446,6 @@ export const StepThree: React.FC<StepThreeProps> = ({ stepOneData, stepTwoData }
 
         try {
             const payload = buildPayload();
-            console.log("⚙️ Payload envoyé :", payload);
 
             const res = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/bank`, {
                 method: "POST",
@@ -460,7 +459,6 @@ export const StepThree: React.FC<StepThreeProps> = ({ stepOneData, stepTwoData }
             const data = await res.json();
 
             if (res.ok) {
-                console.log("✅ Transaction réussie :", data);
 
                 showNotification({
                     title: "Succès 🎉",

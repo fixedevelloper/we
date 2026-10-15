@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
+import { safeRedirectPath } from '@/utils/safe-redirect'
 
 const useSignIn = () => {
   const [loading, setLoading] = useState(false)
@@ -41,7 +42,7 @@ const useSignIn = () => {
       });
 
       if (res?.ok) {
-        push(queryParams["redirectTo"] ?? "/dashboard");
+        push(safeRedirectPath(queryParams["redirectTo"]));
         showNotification({
           message: "Connexion réussie. Redirection en cours...",
           variant: "success",
