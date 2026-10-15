@@ -1,17 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+export default withAuth(
+  function middleware(request) {
+    if (request.nextUrl.pathname === '/') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return NextResponse.next()
+  },
+  {
+    pages: { signIn: '/auth/login' },
+  },
+)
 
-  if (request.nextUrl.pathname == '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-  return response
-}
-
-// See "Matching Paths" below to learn more
+// Protège toutes les routes sauf l'auth, l'API NextAuth et les assets statiques
 export const config = {
-  matcher: '/',
+  matcher: ['/((?!auth|api/auth|_next/static|_next/image|favicon.ico|images|assets).*)'],
 }
-
-export { default } from 'next-auth/middleware'
