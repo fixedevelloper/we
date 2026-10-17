@@ -1,21 +1,21 @@
 import PageTitle from '@/components/PageTitle'
 import { Metadata } from 'next'
 import { Col, Row } from 'react-bootstrap'
-import BeneficiaryCard from "./components/BeneficiaryCard";
+import PartyListCard from '@/components/parties/PartyListCard'
 
-export const metadata: Metadata = { title: 'Beneficiaries' }
+export const metadata: Metadata = { title: 'Bénéficiaires' }
 
-const BeneficiariesPage = () => {
+const Page = () => {
   return (
-      <>
-        <PageTitle title="Beneficiaries" subTitle="Listes" />
-        <Row>
-          <Col xs={12}>
-            <BeneficiaryCard />
-          </Col>
-        </Row>
-      </>
+    <>
+      <PageTitle title="Bénéficiaires" subTitle="Liste" />
+      <Row>
+        <Col xs={12}>
+          <PartyListCard role="BENEFICIARY" />
+        </Col>
+      </Row>
+    </>
   )
 }
 
-export default BeneficiariesPage
+export default Page

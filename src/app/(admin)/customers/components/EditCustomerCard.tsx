@@ -1,187 +1,79 @@
 'use client'
-import React, {useRef, useState, useEffect, FormEvent} from "react";
-import {Button, Card, Col, Form, InputGroup, ListGroup, ProgressBar, Row, Table} from "react-bootstrap";
+import React, { useEffect, useState } from 'react'
+import { Button, Card, Form } from 'react-bootstrap'
+import API_ENDPOINTS from '@/app/(other)/api/Constant'
+import { useFetchData } from '@/hooks/useFetchData'
+import { useApi } from '@/hooks/useApi'
+import { useNotificationContext } from '@/context/useNotificationContext'
+import IconifyIcon from '@/components/wrappers/IconifyIcon'
+import Spinner from '@/components/Spinner'
+import { ApiError } from '@/lib/api/http'
 
-import API_ENDPOINTS from "../../../(other)/api/Constant";
-import {useFetchData} from "../../../../hooks/useFetchData";
-import {useSession} from "next-auth/react";
-import IconifyIcon from "../../../../components/wrappers/IconifyIcon";
-import Spinner from "../../../../components/Spinner";
+type AdminCustomer = { id: string; displayName?: string; firstName?: string; lastName?: string; businessName?: string; status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED' }
 
+/**
+ * Le profil d'un client est modifié par le client lui-même (application) : le back-office ne change que le statut du
+ * compte (suspension, réactivation, clôture), avec un motif conservé dans le journal d'audit.
+ */
+const EditCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) => {
+  const api = useApi()
+  const { showNotification } = useNotificationContext()
+  const { data, loading, refetch } = useFetchData<AdminCustomer>(`${API_ENDPOINTS.CUSTOMERS}/${customerId}`)
+  const [status, setStatus] = useState<string>('ACTIVE')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
 
-interface Customer {
-    id: number;
-    name: string;
-    country_name: string;
-    type: string;
-    balance: string;
-    phone: string;
-    type_identification: string;
-    numero_piece: string;
-    email: string;
-    photo: string;
-    motif: string;
-    expired_date_piece: string;
-    status_account: string;
-    piece_face_file: string;
-    piece_recto_file: string;
+  useEffect(() => {
+    if (data) setStatus(data.status)
+  }, [data])
+
+  if (loading && !data) {
+    return (
+      <div className="text-center my-5">
+        <Spinner type="border" color="primary" />
+      </div>
+    )
+  }
+  if (!data) return <p className="text-center text-muted mt-4">Aucun client trouvé.</p>
+
+  const save = async () => {
+    setBusy(true)
+    try {
+      await api.patch(`${API_ENDPOINTS.CUSTOMERS}/${customerId}`, { status, reason: reason || undefined })
+      showNotification({ message: 'Statut du compte mis à jour', variant: 'success' })
+      setReason('')
+      await refetch()
+    } catch (e) {
+      showNotification({ message: e instanceof ApiError ? e.fullMessage : 'Erreur inattendue', variant: 'danger' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="border-0 shadow-sm mb-4">
+      <Card.Body>
+        <Form.Group className="mb-3">
+          <Form.Label>Statut du compte</Form.Label>
+          <Form.Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="ACTIVE">Actif</option>
+            <option value="SUSPENDED">Suspendu (aucun envoi possible)</option>
+            <option value="CLOSED">Clos</option>
+          </Form.Select>
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>Motif (conservé dans l'audit)</Form.Label>
+          <Form.Control value={reason} onChange={(e) => setReason(e.target.value)} />
+        </Form.Group>
+        <div className="text-center">
+          <Button variant="primary" disabled={busy || status === data.status} onClick={save}>
+            <IconifyIcon icon="ri:edit-2-line" className="me-1" />
+            Enregistrer
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  )
 }
 
-const EditCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) => {
-    const { data: session, status } = useSession();
-    const loadingSession = status === "loading";
-    const [showReceipt, setShowReceipt] = useState(false);
-    const [selectTypeAccount, setSelectTypeAccount] =useState<any>(null);
-    const url = customerId ? `${API_ENDPOINTS.CUSTOMERS}/${customerId}` : undefined;
-    const requestUrl = url ?? "";
-    const { data: customer_, loading:isLoading } = useFetchData<{ data: Customer }>(
-        requestUrl
-    );
-
-    if (loadingSession || isLoading) {
-        return (
-            <div className="text-center my-5">
-                <Spinner type="border" color="primary" />
-                <p className="mt-3 small text-muted">Chargement des détails du client...</p>
-            </div>
-        );
-    }
-
-    if (!customer_?.data) {
-        return <p className="text-center text-muted mt-4">Aucun client trouvé.</p>;
-    }
-
-    const customer = customer_.data;
-
-
-    return (
-        <div className="transaction-detail">
-
-
-            {/* 👤 Informations principales */}
-            <Card className="border-0 shadow-sm mb-4">
-
-                <Card.Body>
-                    <div className="mb-3">
-                        <label htmlFor="example-select" className="form-label">Type de compte</label>
-                        <Form.Select id="example-select" name='type'
-                                     value={selectTypeAccount}
-                       onChange={(type_account) => {
-                            setSelectTypeAccount(type_account);
-                        }}>
-                            <option value='P'>Personnal</option>
-                            <option value='B'>Bussiness</option>
-                        </Form.Select>
-                    </div>
-                    <Row className="align-items-center">
-                        <Col md={6}>
-                            {selectTypeAccount=='P'?(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Nom </label>
-                                <Form.Control type="text" id="simpleinput" name='first_name'/>
-                            </div>):(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Nom du bissiness </label>
-                                <Form.Control type="text" id="simpleinput" name='bussness_name'/>
-                            </div>) }
-
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Telephone </label>
-                                <Form.Control type="text" id="simpleinput" name='phone'/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Adresse </label>
-                                <Form.Control type="text" id="simpleinput" name='address'/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="example-select" className="form-label">Type de compte</label>
-                                <Form.Select id="example-select" name='type'>
-                                    <option value='P'>Personnal</option>
-                                    <option value='B'>Bussiness</option>
-                                </Form.Select>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="example-select" className="form-label">Sexe</label>
-                                <Form.Select id="example-select" name='gender'>
-                                    <option value='M'>Homme</option>
-                                    <option value='F'>Femme</option>
-                                </Form.Select>
-                            </div>
-                        </Col>
-                        <Col md={6}>
-                            {selectTypeAccount=='P'?(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Prenom </label>
-                                <Form.Control type="text" id="simpleinput" name='last_name'/>
-                            </div>):(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Type de business </label>
-                                <Form.Select id="example-select" name='business_type'>
-                                    <option value='SARLU'>SARLU</option>
-                                    <option value='SARL'>SARL</option>
-                                    <option value='SAS'>SAS</option>
-                                </Form.Select>
-                            </div>) }
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Email </label>
-                                <Form.Control type="text" id="simpleinput" name='email'/>
-                            </div>
-                            {selectTypeAccount=='P'?(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Date de naissance </label>
-                                <Form.Control type="date" id="simpleinput" name='date_birth'/>
-                            </div>):(<div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Date de creation </label>
-                                <Form.Control type="date" id="simpleinput" name='registred_date'/>
-                            </div>)}
-
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Occupation </label>
-                                <Form.Control type="text" id="simpleinput" name='occupation'/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="example-select" className="form-label">Civility</label>
-                                <Form.Select id="example-select" name='civility'>
-                                    <option value='Maried'>Maried</option>
-                                    <option value='Single'>Single</option>
-                                </Form.Select>
-                            </div>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
-
-            <Card className="border-0 shadow-sm mb-4">
-
-                <Card.Body>
-                    <Row className="align-items-center">
-                        <Col md={6}>
-                            <div className="mb-3">
-                                <label htmlFor="example-select" className="form-label">Type de document</label>
-                                <Form.Select id="example-select" name='type'>
-                                    <option value='PP'>Passport</option>
-                                    <option value='CN'>CNI</option>
-                                </Form.Select>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Date d'expiration </label>
-                                <Form.Control type="date" id="simpleinput" name='expired_document'/>
-                            </div>
-                        </Col>
-                        <Col md={6}>
-                            <div className="mb-3">
-                                <label htmlFor="simpleinput" className="form-label"> Numero du document </label>
-                                <Form.Control type="text" id="simpleinput" name='id_number'/>
-                            </div>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
-
-            {/* ⚙️ Boutons d’action */}
-            <div className="text-center mt-4">
-                <Button variant="primary">
-                    <IconifyIcon icon="ri:edit-2-line" className="me-1" />
-                    Modifier
-                </Button>
-            </div>
-        </div>
-    );
-};
-
-export default EditCustomerCard;
+export default EditCustomerCard

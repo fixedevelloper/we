@@ -1,222 +1,159 @@
 'use client'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
-import debounce from "lodash.debounce";
-import Image from 'next/image'
-import Link from 'next/link'
-import { Button, Card, CardFooter, CardHeader, Table } from 'react-bootstrap'
+import debounce from 'lodash.debounce'
+import { Badge, Button, Card, CardFooter, CardHeader, Form, Table } from 'react-bootstrap'
 import { useFetchData } from '@/hooks/useFetchData'
-import API_ENDPOINTS from "../../../(other)/api/Constant";
-import React, { useEffect, useState } from "react";
+import { useApi } from '@/hooks/useApi'
+import { useNotificationContext } from '@/context/useNotificationContext'
+import API_ENDPOINTS from '../../../(other)/api/Constant'
+import React, { useEffect, useState } from 'react'
+import Paginator from '@/components/Paginator'
+import { ApiError } from '@/lib/api/http'
+import { formatDateTime, formatMoney } from '@/lib/api/format'
+import type { Money, Page } from '@/lib/api/types'
 
-import Pagination from "react-bootstrap/Pagination";
-
-interface Recharge {
-  id: number;
-  numero: string;
-  datecreation: string;
-  customer_name?: string;
-  mode?: string;
-  amount?: number;
-  country_name?: string;
-  status?: string;
+type TopUp = {
+  id: string
+  reference: string
+  method: 'WACE_MOBILE_MONEY' | 'MANUAL_PROOF'
+  amount: Money
+  status: string
+  failureReason?: string
+  createdAt: string
+  completedAt?: string
+  customer?: { id?: string; displayName?: string }
+  proofDownloadUrl?: string
 }
 
-interface RechargeResponse {
-  status: string;
-  code: number;
-  message: string;
-  data: {
-    results: Recharge[];
-    totalPages: number;
-    page: number;
-  };
-}
+const VARIANTS: Record<string, string> = { PENDING: 'warning', PROCESSING: 'info', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'secondary', REJECTED: 'danger' }
 
-
-
+/** Recharges des portefeuilles : le personnel examine les preuves de paiement manuelles (approbation = crédit du portefeuille). */
 const RechargesCard: React.FC = () => {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const api = useApi()
+  const { showNotification } = useNotificationContext()
+  const [page, setPage] = useState(0)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    const handler = debounce(() => setDebouncedSearch(search), 500);
-    handler();
-    return () => handler.cancel();
-  }, [search]);
+    const handler = debounce(() => setDebouncedSearch(search), 500)
+    handler()
+    return () => handler.cancel()
+  }, [search])
+  useEffect(() => setPage(0), [debouncedSearch, status])
 
-  const { data, loading, error, refetch } = useFetchData<RechargeResponse>(
-      API_ENDPOINTS.RECHARGES,
-      { page, limit, search: debouncedSearch }
-  );
+  const { data, loading, error, refetch } = useFetchData<Page<TopUp>>(API_ENDPOINTS.TOP_UPS, { page, size: 10, search: debouncedSearch, status, sort: 'createdAt,desc' })
 
-  const transactions = data?.data?.results ?? [];
-  const totalPages = data?.data?.totalPages ?? 1;
-
-  useEffect(() => {
-    refetch();
-  }, [page, debouncedSearch, refetch]);
-
-  // Générer les items de pagination avec "fenêtre" autour de la page courante
-  const getPaginationItems = () => {
-    const items = [];
-    const delta = 2; // nombre de pages avant et après la page courante
-
-    let start = Math.max(1, page - delta);
-    let end = Math.min(totalPages, page + delta);
-
-    if (start > 1) {
-      items.push(
-          <Pagination.Item key={1} onClick={() => setPage(1)}>
-            1
-          </Pagination.Item>
-      );
-      if (start > 2) items.push(<Pagination.Ellipsis key="start-ellipsis" disabled />);
+  const decide = async (t: TopUp, approve: boolean) => {
+    let body: Record<string, string> = {}
+    if (approve) {
+      if (!window.confirm(`Approuver la recharge ${t.reference} (${formatMoney(t.amount)}) ? Le portefeuille du client sera crédité.`)) return
+    } else {
+      const reason = window.prompt('Motif du refus (obligatoire) :')?.trim()
+      if (!reason) return
+      body = { reason }
     }
-
-    for (let number = start; number <= end; number++) {
-      items.push(
-          <Pagination.Item
-              key={number}
-              active={number === page}
-              onClick={() => setPage(number)}
-          >
-            {number}
-          </Pagination.Item>
-      );
+    setBusy(true)
+    try {
+      await api.post(`${API_ENDPOINTS.TOP_UPS}/${t.id}/${approve ? 'approve' : 'reject'}`, body)
+      showNotification({ message: approve ? 'Recharge approuvée' : 'Recharge refusée', variant: 'success' })
+      await refetch()
+    } catch (e) {
+      showNotification({ message: e instanceof ApiError ? e.fullMessage : 'Erreur inattendue', variant: 'danger' })
+    } finally {
+      setBusy(false)
     }
+  }
 
-    if (end < totalPages) {
-      if (end < totalPages - 1) items.push(<Pagination.Ellipsis key="end-ellipsis" disabled />);
-      items.push(
-          <Pagination.Item key={totalPages} onClick={() => setPage(totalPages)}>
-            {totalPages}
-          </Pagination.Item>
-      );
-    }
+  const topUps = data?.content ?? []
 
-    return items;
-  };
   return (
-      <Card>
-        {/* CardHeader avec search */}
-        <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
-          <div className="flex-grow-1">
-            <h4 className="header-title">Recharges</h4>
-          </div>
-          <div className="d-flex flex-wrap flex-lg-nowrap gap-2">
-            <div className="flex-shrink-0 d-flex align-items-center gap-2">
-              <div className="position-relative">
-                <input type="text"
-                       value={search}
-                       onChange={(e) => setSearch(e.target.value)} className="form-control ps-4" placeholder="Search Here..." />
-                <IconifyIcon icon="ti:search" className="ti position-absolute top-50 translate-middle-y start-0 ms-2" />
-              </div>
-            </div>
-            <Link href="/recharges/add-recharge" className="btn btn-primary">
-              <IconifyIcon icon="ri:add-line " className="me-1" />
-              Ajouter
-            </Link>
-          </div>
-        </CardHeader>
-
-        {/* Table */}
-        <div className="table-responsive">
-          {loading ? (
-              <p>Chargement...</p>
-          ) : error ? (
-              <p>❌ {error.message}</p>
-          ) : (
-              <Table className="table-hover text-nowrap mb-0">
-                <thead className="bg-light-subtle">
-                <tr>
-                  <th className="ps-3" style={{ width: 50 }}>
-                    <input type="checkbox" className="form-check-input" id="customCheck1" />
-                  </th>
-                  <th className="fs-12 text-uppercase text-muted">ID</th>
-                  <th className="fs-12 text-uppercase text-muted">Date</th>
-                  <th className="fs-12 text-uppercase text-muted">Mode</th>
-                  <th className="fs-12 text-uppercase text-muted">Client</th>
-                  <th className="fs-12 text-uppercase text-muted">Pays</th>
-                  <th className="fs-12 text-uppercase text-muted">Montant</th>
-                  <th className="fs-12 text-uppercase text-muted">Status</th>
-                  <th className="text-center fs-12 text-uppercase text-muted" style={{ width: 120 }}>
-                    Action
-                  </th>
-                </tr>
-                </thead>
-                <tbody>
-                {transactions.map((t) => (
-                    <tr key={t.id}>
-                      <td className="ps-3">
-                        <input type="checkbox" className="form-check-input" id="customCheck2" />
-                      </td>
-                      <td><span className="text-muted fw-semibold">#{t.id}</span></td>
-
-                      <td>
-                      <span className="fs-15 text-muted">  {t.datecreation
-                            ? new Date(t.datecreation).toLocaleDateString("fr-FR", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "-"}</span>
-                      </td>
-                      <td>{t.mode || "-"}</td>
-                      <td> <h6 className="fs-14 mb-0">{t.customer_name || "-"}</h6></td>
-                      <td><span className="fs-15 text-muted">{t.amount != null ? t.amount.toLocaleString() : "-"} FCFA</span></td>
-                      <td><span className="fs-15 text-muted">{t.country_name || "-"}</span></td>
-                      <td>
-                        <span
-                            className={`badge bg-${t.status == 'en validation' ? 'warning' : t.status == 'en attente' ? 'primary' : t.status == '0' ? 'danger' : 'success'}-subtle text-${t.status == 'en validation' ? 'warning' : t.status == 'Pending' ? 'primary' : t.status == 'echoue' ? 'danger' : 'success'} fs-12 p-1`}>
-                      {t.status == 'echoue' ? 'danger' : 'success'}
-                    </span>
-                      </td>
-                      <td className="pe-3">
-                        <div className="hstack gap-1 justify-content-end">
-                          <Button variant="soft-primary" size="sm" className="btn-icon rounded-circle">
-                            <IconifyIcon icon="ri:eye-line"></IconifyIcon>
-                          </Button>
-                          <Button variant="soft-danger" size="sm" className="btn-icon rounded-circle">
-                            <IconifyIcon icon="ri:delete-bin-line" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                ))}
-                </tbody>
-              </Table>
-          )}
+    <Card>
+      <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
+        <div className="flex-grow-1">
+          <h4 className="header-title">Recharges</h4>
         </div>
-        {/* Pagination personnalisée */}
-        <CardFooter>
-          <Pagination className="mb-0 justify-content-end">
-            <Pagination.First
-                onClick={() => setPage(1)}
-                disabled={page === 1}
-            />
-            <Pagination.Prev
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-            />
+        <Form.Select style={{ width: 180 }} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">Tous les statuts</option>
+          {Object.keys(VARIANTS).map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Form.Select>
+        <div className="position-relative">
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="form-control ps-4" placeholder="Rechercher..." />
+          <IconifyIcon icon="ti:search" className="ti position-absolute top-50 translate-middle-y start-0 ms-2" />
+        </div>
+      </CardHeader>
 
-            {getPaginationItems()}
+      <div className="table-responsive">
+        {loading && !data ? (
+          <p className="p-3">Chargement...</p>
+        ) : error ? (
+          <p className="p-3 text-danger">❌ {error.message}</p>
+        ) : (
+          <Table className="table-hover text-nowrap mb-0">
+            <thead className="bg-light-subtle">
+              <tr>
+                <th>Référence</th>
+                <th>Date</th>
+                <th>Mode</th>
+                <th>Client</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th className="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topUps.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center text-muted">
+                    Aucune recharge.
+                  </td>
+                </tr>
+              )}
+              {topUps.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.reference}</td>
+                  <td>{formatDateTime(t.createdAt)}</td>
+                  <td>{t.method === 'MANUAL_PROOF' ? 'Preuve de paiement' : 'Mobile money (Wace)'}</td>
+                  <td>{t.customer?.displayName || '-'}</td>
+                  <td>{formatMoney(t.amount)}</td>
+                  <td>
+                    <Badge bg={VARIANTS[t.status] ?? 'secondary'}>{t.status}</Badge>
+                    {t.failureReason && <div className="small text-muted">{t.failureReason}</div>}
+                  </td>
+                  <td className="text-end">
+                    {t.proofDownloadUrl && (
+                      <a href={t.proofDownloadUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-secondary me-1">
+                        Preuve
+                      </a>
+                    )}
+                    {t.method === 'MANUAL_PROOF' && t.status === 'PENDING' && (
+                      <>
+                        <Button size="sm" variant="success" className="me-1" disabled={busy} onClick={() => decide(t, true)}>
+                          Approuver
+                        </Button>
+                        <Button size="sm" variant="danger" disabled={busy} onClick={() => decide(t, false)}>
+                          Refuser
+                        </Button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+      <CardFooter>
+        <Paginator page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
+      </CardFooter>
+    </Card>
+  )
+}
 
-            <Pagination.Next
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-            />
-            <Pagination.Last
-                onClick={() => setPage(totalPages)}
-                disabled={page === totalPages}
-            />
-          </Pagination>
-        </CardFooter>
-      </Card>
-  );
-};
-
-
-
-export default RechargesCard;
+export default RechargesCard

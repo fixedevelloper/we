@@ -10,6 +10,16 @@
  *   { prefix: '/manage-token', roles: ['admin'] },
  *   { prefix: '/audits', roles: ['admin', 'support'] },
  */
+/**
+ * Rôles du personnel (valeurs de l'API : SUPPORT, ADMIN, SUPER_ADMIN, comparées en minuscules). Le détail des droits est
+ * appliqué par l'API (permissions) : l'interface masque seulement ce que l'API refuserait.
+ */
+export const BACKOFFICE_ROLES = ['support', 'admin', 'super_admin']
+
+/** Vrai si l'utilisateur a au moins un rôle d'administration. */
+export const isBackofficeUser = (userRoles: unknown): boolean =>
+  parseRoles(userRoles).some((r) => BACKOFFICE_ROLES.includes(r))
+
 export const ROUTE_ROLES: Array<{ prefix: string; roles: string[] }> = []
 
 export const parseRoles = (value: unknown): string[] =>

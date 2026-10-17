@@ -1,129 +1,45 @@
-import {useCallback, useEffect, useMemo, useState} from 'react'
-import {useSession} from "next-auth/react";
-import {HeadersInit} from "undici-types";
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { ApiError, apiFetch, type Params } from '@/lib/api/http'
 
+/**
+ * Lecture d'une ressource de l'API Spring (corps JSON direct, erreurs problem+json).
+ * `refetch(params)` relit avec d'autres paramètres ; `error` est une `ApiError`.
+ * La première lecture attend le jeton de session (sans jeton l'API répondrait 401).
+ */
+export function useFetchData<DataType>(endpoint: string, initialParams: Params = {}, enabled = true) {
+  const { data: session, status } = useSession()
+  const token = session?.accessToken
+  const [data, setData] = useState<DataType | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<ApiError | Error | null>(null)
+  const lastCall = useRef(0)
 
-export type QueryParams = {
-    page?: number;
-    limit?: number;
-    search?: string;
-};
-
-export function useFetchData<DataType>(
-    endpoint: string,
-    initialParams: Record<string, any> = {},
-    options: RequestInit = {}
-) {
-    const { data: session } = useSession();
-    const [data, setData] = useState<DataType | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
-
-    const fetchData = useCallback(async (params: Record<string, any> = initialParams) => {
-        try {
-            setLoading(true);
-
-            const url = new URL(endpoint, window.location.origin);
-            Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== "")
-                    url.searchParams.append(key, String(value));
-            });
-
-            const headers = new Headers({
-                "Content-Type": "application/json",
-                ...options.headers,
-            });
-
-            if (session?.accessToken) {
-                headers.set("Authorization", `Bearer ${session.accessToken}`);
-            }
-
-
-            const res = await fetch(url.toString(), { ...options, headers });
-            if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
-
-            const result = await res.json();
-            setData(result);
-        } catch (err) {
-            setError(err as Error);
-        } finally {
-            setLoading(false);
-        }
-    }, [endpoint, JSON.stringify(initialParams), JSON.stringify(options), session?.accessToken]);
-
-    // 🔹 Appel initial une seule fois
-    useEffect(() => {
-        fetchData();
-    }, []); // pas de dépendances → pas de boucle infinie
-
-    return { data, loading, error, refetch: fetchData };
-}
-
-
-
-/*export const useFetchData = <DataType>(fn: () => Promise<DataType>) => {
-  const [data, setData] = useState<DataType>()
-  useEffect(() => {
-    const fetchData = async () => {
-      const fetchedData = await fn()
-      setData(fetchedData)
-    }
-    fetchData()
-  }, [])
-
-  return data
-}*/
-// 🔹 Hook générique
-
-/*export function useFetchData<DataType>(
-    endpoint: string,
-    queryParams: Record<string, any> = {},
-    options: RequestInit = {}
-) {
-  const { data: session } = useSession();
-  const [data, setData] = useState<DataType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  // 🔹 Memoize pour éviter la recréation d'objet à chaque render
-  const memoizedQueryParams = useMemo(() => queryParams, [JSON.stringify(queryParams)]);
-  const memoizedOptions = useMemo(() => options, [JSON.stringify(options)]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const url = new URL(endpoint);
-      Object.entries(memoizedQueryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "")
-          url.searchParams.append(key, String(value));
-      });
-
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-        ...memoizedOptions.headers,
-      };
-
-      if (session?.accessToken) {
-        headers["Authorization"] = `Bearer ${session.accessToken}`;
+  const fetchData = useCallback(
+    async (params: Params = initialParams) => {
+      if (!token) return
+      const call = ++lastCall.current
+      try {
+        setLoading(true)
+        setError(null)
+        const result = await apiFetch<DataType>(endpoint, { token, params })
+        if (call === lastCall.current) setData(result) // une réponse plus ancienne ne remplace pas la plus récente
+      } catch (err) {
+        if (call === lastCall.current) setError(err as Error)
+      } finally {
+        if (call === lastCall.current) setLoading(false)
       }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [endpoint, JSON.stringify(initialParams), token],
+  )
 
-      const res = await fetch(url.toString(), { ...memoizedOptions, headers });
-
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
-
-      const result = await res.json();
-      setData(result);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  }, [endpoint, memoizedQueryParams, memoizedOptions, session?.accessToken]);
-
+  // Relit à chaque changement d'adresse, de paramètres ou de jeton : les appelants n'ont pas à appeler refetch pour cela.
+  const paramsKey = JSON.stringify(initialParams)
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (enabled && status === 'authenticated') fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, status, token, endpoint, paramsKey])
 
-  return { data, loading, error, refetch: fetchData };
-}*/
+  return { data, loading, error, refetch: fetchData }
+}

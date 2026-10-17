@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WeTransfert Cash — back-office (Next.js)
 
-## Getting Started
+Interface d'administration de l'API Spring Boot **wtc-spring** (contrat : `wtc-spring/api/openapi.yaml`).
 
-First, run the development server:
+## Démarrer
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # NEXTAUTH_SECRET, NEXT_PUBLIC_API_URL
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Côté API : `CORS_ALLOWED_ORIGINS=http://localhost:3000` (le navigateur appelle l'API directement).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture d'accès à l'API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/lib/api/http.ts` : client unique (`/api`, jeton Bearer, erreurs `problem+json` -> `ApiError`, `Idempotency-Key`).
+- `src/hooks/useFetchData.ts` (lectures, relues quand les paramètres changent) et `src/hooks/useApi.ts` (écritures).
+- Authentification : NextAuth + API (`/api/auth/login`, **double authentification obligatoire pour le personnel**, `/api/auth/mfa/verify`). Le jeton d'accès (15 min) est renouvelé par le *refresh token à rotation* côté serveur NextAuth ; un refresh refusé déconnecte. Un compte sans 2FA est conduit à `/auth/mfa-setup`.
+- Les droits sont appliqués par l'API (permissions) : l'interface affiche l'erreur 403 de l'API quand une action est refusée.
 
-## Learn More
+## Écrans
 
-To learn more about Next.js, take a look at the following resources:
+Transferts (liste, détail, remboursement, relecture Wace, saisie pour un client avec devis serveur), clients (identité KYC, portefeuilles, demande d'ajustement), ajustements de solde (double validation), recharges (preuves manuelles), expéditeurs/bénéficiaires, barème de frais et zones, pays (import Wace), jetons web WhatsApp, personnel, journal d'audit et connexions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pas encore d'écran : réconciliation Wace (non implémentée côté API), tableau de bord alimenté par l'API (les statistiques affichées sont des exemples).

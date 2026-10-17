@@ -1,31 +1,20 @@
 'use client';
 
 import PageTitle from '@/components/PageTitle'
-import { Spinner } from 'react-bootstrap';
 import {useParams} from 'next/navigation';
 import React from "react";
-import EditSenderCard from "../components/EditSenderCard";
+import PartyEditCard from "@/components/parties/PartyEditCard";
 
-const EditCustomerPage = () => {
+const Page = () => {
     const params = useParams();
     const id = params?.id as string;
-
-
-    if (!id) {
-        return (
-            <div className="text-center my-5">
-                <Spinner animation="border" variant="primary" />
-                <p className="mt-3">Chargement de l'expediteur...</p>
-            </div>
-        );
-    }
-
+    if (!id) return null;
     return (
         <>
-            <PageTitle title="Modifier l'expediteur" subTitle="Informations complètes" />
-            <EditSenderCard customerId={id as string} />
+            <PageTitle title="Expéditeur" subTitle="Détails et modification" />
+            <PartyEditCard partyId={id} />
         </>
     );
 };
 
-export default EditCustomerPage;
+export default Page;

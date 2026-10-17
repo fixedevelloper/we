@@ -1,165 +1,78 @@
 'use client'
-import React, {useRef, useState, useEffect, FormEvent} from "react";
-import {Button, Card, Col, Form, InputGroup, ListGroup, ProgressBar, Row, Table} from "react-bootstrap";
-import Link from "next/link";
-import StepWizard from "react-step-wizard";
-import ComponentContainerCard from "../../../../components/ComponentContainerCard";
-import Select from "react-select";
-import API_ENDPOINTS from "../../../(other)/api/Constant";
-import {useFetchData} from "../../../../hooks/useFetchData";
-import {useSession} from "next-auth/react";
-import Feedback from "react-bootstrap/Feedback";
-import {Country, ResponseApi} from "../../../../types/data";
-import {useNotificationContext} from "../../../../context/useNotificationContext";
+import React, { useState } from 'react'
+import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap'
+import { useFetchData } from '@/hooks/useFetchData'
+import { useApi } from '@/hooks/useApi'
+import { useNotificationContext } from '@/context/useNotificationContext'
+import API_ENDPOINTS from '../../../(other)/api/Constant'
+import { ApiError } from '@/lib/api/http'
+import { formatDateTime } from '@/lib/api/format'
+import type { Country } from '@/lib/api/types'
 
-
-
-
+/** Crée un jeton web : montant et pays pré-remplis dans le parcours WhatsApp. Le jeton n'est affiché qu'une fois. */
 const AddTokenCard: React.FC = () => {
+  const api = useApi()
+  const { showNotification } = useNotificationContext()
+  const countries = useFetchData<Country[]>(API_ENDPOINTS.COUNTRIES)
+  const [country, setCountry] = useState('')
+  const [amount, setAmount] = useState('')
+  const [minutes, setMinutes] = useState('60')
+  const [busy, setBusy] = useState(false)
+  const [created, setCreated] = useState<{ token: string; expiresAt: string } | null>(null)
 
-    const {data: session, status} = useSession(); //
-
-
-    // si ton hook renvoie un état de chargement
-    const [selectedCountry, setSelectedCountry] = useState<any>(null);
-    const [phone, setPhone] = useState<any>(null);
-    const [amount, setAmount] = useState<any>(null);
-    const [validated, setValidated] = useState(false)
-    const userId = session?.user?.id;
-    const { showNotification } = useNotificationContext();
-    const [loadingSubmit, setLoadingSubmit] = useState(false);
-    const [showGlobalLoader, setShowGlobalLoader] = useState(false);
-    const { data: countriesResponse } = useFetchData<ResponseApi<Country>>(API_ENDPOINTS.COUNTRIES);
-
-    const countries = countriesResponse?.data ?? [];
-
-
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Validation manuelle
-        if (!selectedCountry || !phone || !amount) {
-            setValidated(true);
-            showNotification({
-                title: "Erreur ⚠️",
-                message: "Veuillez remplir tous les champs obligatoires.",
-                variant: "danger",
-            });
-            return;
-        }
-
-        setValidated(true);
-        setLoadingSubmit(true);
-        setShowGlobalLoader(true);
-
-        try {
-            const payload = {
-                country_id: selectedCountry.value,
-                phone,
-                amount,
-                user_id: userId,
-            };
-
-            const res = await fetch(API_ENDPOINTS.WEBTOKENS, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${session?.accessToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(
-                    data?.error?.details || data?.message || "Erreur lors de la création du token."
-                );
-            }
-
-            showNotification({
-                title: "Succès ✅",
-                message: "Le token a été créé avec succès.",
-                variant: "success",
-            });
-
-            // reset
-            setSelectedCountry(null);
-            setPhone("");
-            setAmount("");
-
-        } catch (err: any) {
-            showNotification({
-                title: "Échec ⚠️",
-                message: err.message || "Une erreur s’est produite.",
-                variant: "danger",
-            });
-        } finally {
-            setLoadingSubmit(false);
-            setShowGlobalLoader(false);
-        }
-    };
-
-
-
-    const loading = status === "loading";
-
-    if (loading) {
-        return (
-            <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Chargement...</span>
-                </div>
-            </div>
-        );
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      setCreated(await api.post(API_ENDPOINTS.WEB_TOKENS, { amount, countryCode: country, validForMinutes: Number(minutes) }))
+      setAmount('')
+    } catch (err) {
+      showNotification({ message: err instanceof ApiError ? err.fullMessage : 'Erreur inattendue', variant: 'danger' })
+    } finally {
+      setBusy(false)
     }
+  }
 
-    if (!session) {
-        return <p className="text-center">Vous devez être connecté pour accéder à ce formulaire.</p>;
-    }
-
-    return (
-        <Row className="justify-content-center">
-            <Col lg={8}>
-                <ComponentContainerCard title="Ajouter un token">
-                    <Form className="needs-validation" noValidate validated={validated} onSubmit={handleSubmit}>
-                    <Row>
-                        {/* Pays */}
-                        <div className="mb-3">
-                            <label className="form-label">Pays</label>
-                            <Select
-                                required
-                                className="select2"
-                                isClearable
-                                options={[{ value: "", label: "Sélectionner" }, ...(countries || []).map((c: any) => ({ value: c.id, label: c.name, currency: c.currency }))]}
-                                onChange={(option) => setSelectedCountry(option)}
-                                value={selectedCountry}
-                            />
-                            <Feedback type="invalid">Please choose a username.</Feedback>
-                        </div>
-
-
-                        {/* Expéditeur */}
-                        <div className="mb-3">
-                            <label className="form-label">Telephone</label>
-                            <input placeholder='237677586923' className="form-control" value={phone} onChange={(e) => { setPhone(e.target.value) }} />
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Montant (FCFA)</label>
-                            <input className="form-control" value={amount} onChange={(e) => { setAmount(e.target.value) }} />
-                        </div>
-                        <Button type="submit" disabled={loadingSubmit}>
-                            {loadingSubmit ? "Création..." : "Créer le token"}
-                        </Button>
-
-
-                    </Row></Form>
-                </ComponentContainerCard>
+  return (
+    <Card className="border-0 shadow-sm">
+      <Card.Body>
+        {created && (
+          <Alert variant="success">
+            Jeton créé (valable jusqu'au {formatDateTime(created.expiresAt)}). <strong>Copiez-le maintenant, il ne sera plus affiché :</strong>
+            <pre className="mt-2 mb-0 user-select-all">{created.token}</pre>
+          </Alert>
+        )}
+        <Form onSubmit={submit}>
+          <Row>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Pays de destination</Form.Label>
+                <Form.Select required value={country} onChange={(e) => setCountry(e.target.value)}>
+                  <option value="">—</option>
+                  {(countries.data ?? []).filter((c) => c.canReceive).map((c) => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.currencyCode})</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
             </Col>
-        </Row>
-    );
-};
-
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Montant</Form.Label>
+                <Form.Control required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(',', '.'))} />
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Validité (minutes, 1 à 1440)</Form.Label>
+                <Form.Control type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+              </Form.Group>
+            </Col>
+          </Row>
+          <Button type="submit" disabled={busy || !country || !amount}>Créer le jeton</Button>
+        </Form>
+      </Card.Body>
+    </Card>
+  )
+}
 
 export default AddTokenCard

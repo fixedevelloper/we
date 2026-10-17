@@ -1,12 +1,12 @@
 'use client'
 import type { ChildrenType } from '@/types/component-props'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
 import FallbackLoading from '../FallbackLoading'
 
 const AuthProtectionWrapper = ({ children }: ChildrenType) => {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const { push } = useRouter()
   const pathname = usePathname()
 
@@ -14,10 +14,16 @@ const AuthProtectionWrapper = ({ children }: ChildrenType) => {
   useEffect(() => {
     if (status === 'unauthenticated') {
       push(`/auth/login?redirectTo=${encodeURIComponent(pathname)}`)
+    } else if (session?.error === 'RefreshTokenError') {
+      // Session API terminée (refresh expiré ou révoqué) : retour à la connexion.
+      signOut({ callbackUrl: `/auth/login?redirectTo=${encodeURIComponent(pathname)}` })
+    } else if (status === 'authenticated' && session?.user?.mfaEnabled === false) {
+      // Personnel sans double authentification : seul l'écran d'activation est permis.
+      push('/auth/mfa-setup')
     }
-  }, [status, pathname, push])
+  }, [status, session, pathname, push])
 
-  if (status === 'unauthenticated') {
+  if (status === 'unauthenticated' || session?.error || session?.user?.mfaEnabled === false) {
     return <FallbackLoading />
   }
 

@@ -1,6 +1,6 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-import { isRoleAllowed } from '@/assets/data/route-roles'
+import { isBackofficeUser, isRoleAllowed } from '@/assets/data/route-roles'
 
 export default withAuth(
   function middleware(request) {
@@ -8,6 +8,11 @@ export default withAuth(
 
     if (pathname === '/') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Le back-office est réservé au personnel (l'API refuse de toute façon les autres).
+    if (!isBackofficeUser(request.nextauth?.token?.roles)) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
     // Contrôle de rôle côté serveur (voir assets/data/route-roles.ts)

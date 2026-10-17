@@ -1,765 +1,277 @@
 'use client'
-import React, {useRef, useState, useEffect} from "react";
-import {
-    Button,
-    Card,
-    Col,
-    Form,
-    ListGroup,
-    ProgressBar,
-    Row,
-    Table,
-    Toast,
-    ToastBody,
-    ToastHeader
-} from "react-bootstrap";
-import StepWizard from "react-step-wizard";
-import ComponentContainerCard from "../../../../components/ComponentContainerCard";
-
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap'
+import { useRouter } from 'next/navigation'
+import debounce from 'lodash.debounce'
+import API_ENDPOINTS from '../../../(other)/api/Constant'
+import { useFetchData } from '@/hooks/useFetchData'
+import { useApi } from '@/hooks/useApi'
+import { useNotificationContext } from '@/context/useNotificationContext'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
+import Spinner from '@/components/Spinner'
+import { ApiError, newIdempotencyKey } from '@/lib/api/http'
+import { formatMoney, partyName } from '@/lib/api/format'
+import type { Destination, Money, Page, Party } from '@/lib/api/types'
 
-import Select from "react-select";
-import API_ENDPOINTS from "../../../(other)/api/Constant";
-import {useFetchData} from "../../../../hooks/useFetchData";
-import {useSession} from "next-auth/react";
-import useToggle from "../../../../hooks/useToggle";
-import {useNotificationContext} from "../../../../context/useNotificationContext";
-import Spinner from "../../../../components/Spinner";
-import {ResponseApi} from "../../../../types/data";
-
-type StepWizardInstance = {
-    nextStep: () => void
-    previousStep: () => void
-    goToStep: (step: number) => void
+type CustomerRow = { id: string; displayName: string; kycStatus: string; status: string }
+type ReferenceValue = { code: string; label: string }
+type Quote = {
+  sourceAmount: Money
+  fee: Money
+  feePercent?: number
+  totalDebit: Money
+  destinationAmount?: Money
+  fxRate?: number
+  availableBalance?: Money
+  sufficientFunds: boolean
 }
 
-// StepOne.tsx
-interface StepOneProps {
-    countries: any;
-    senders: any;
-    selectedCountry: any;
-    setSelectedCountry: (country: any) => void;
-    selectedSender: any;
-    setSelectedSender: (sender: any) => void;
-    selectedBeneficiary: any;
-    setSelectedBeneficiary: (beneficiary: any) => void;
-    stepOneData: any;
-    setStepOneData: Function;
-}
+const pairOf = (sender?: Party, beneficiary?: Party) =>
+  `${sender?.kind === 'BUSINESS' ? 'B' : 'P'}2${beneficiary?.kind === 'BUSINESS' ? 'B' : 'P'}`
 
-export const StepOne: React.FC<StepOneProps> = ({
-                                                    countries,
-                                                    senders,
-                                                    selectedCountry,
-                                                    setSelectedCountry,
-                                                    selectedSender,
-                                                    setSelectedSender,
-                                                    selectedBeneficiary,
-                                                    setSelectedBeneficiary,
-                                                    stepOneData,
-                                                    setStepOneData
-                                                }) => {
-
-    const citiesEndpoint = selectedCountry ? `${API_ENDPOINTS.CITIES}/${selectedCountry.value}` : null;
-    const {data: cities = {data: []}, loading: citiesLoading, refetch: refetchCities} = useFetchData<any>(citiesEndpoint || "", {}, {});
-    const [selectedRelaction, setSelectedRelaction] = useState<any>(null);
-    const [selectedCity, setSelectedCity] = useState<any>(null);
-    const [comment, setComment] = useState<any>(null);
-    const shouldFetchRelations = selectedSender && selectedBeneficiary;
-
-    const { data: relactionsResponse , refetch: refetchRelaction,} = useFetchData<ResponseApi<any>>(
-        shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
-        shouldFetchRelations
-            ? {sender_type: selectedSender.type, beneficiary_type: selectedBeneficiary.type, service: "relaction"}
-            : {}
-    );
-const relations=relactionsResponse?.data?? [];
-
-    useEffect(() => {
-        if (selectedCountry && refetchCities) refetchCities();
-    }, [selectedCountry]);
-
-
-    const beneficiantEndpoint = selectedSender
-        ? `${API_ENDPOINTS.BENEFICIARIES}/${selectedSender.value}`
-        : null;
-
-    // ✅ Fetch des beneficiarie selon le pays sélectionné (seulement si country défini)
-    const {
-        data: beneficiaries = {data: []},
-        loading: beneficiariesLoading,
-        refetch: refetchBeneficiaries,
-    } = useFetchData<any>(beneficiantEndpoint || "", {}, {});
-
-    useEffect(() => {
-        if (selectedSender && refetchBeneficiaries) refetchBeneficiaries();
-    }, [selectedSender]);
-
-    useEffect(() => {
-        if (shouldFetchRelations) refetchRelaction();
-    }, [shouldFetchRelations]);
-
-    // ✅ Mettre à jour stepOneData à chaque changement
-    useEffect(() => {
-        setStepOneData({
-            country: selectedCountry,
-            sender: selectedSender,
-            beneficiary: selectedBeneficiary,
-        });
-    }, [selectedCountry, selectedSender, selectedBeneficiary]);
-
-    return (
-        <div className="tab-pane" id="basictab1">
-            <Row>
-                {/* Pays */}
-                <div className="mb-3">
-                    <label className="form-label">Pays</label>
-                    <Select
-                        className="select2"
-                        isClearable
-                        options={[{
-                            value: "",
-                            label: "Sélectionner"
-                        }, ...(countries?.data || []).map((c: any) => ({
-                            value: c.id,
-                            label: c.name,
-                            currency: c.currency
-                        }))]}
-                        onChange={(option) => setSelectedCountry(option)}
-                        value={selectedCountry}
-                    />
-                </div>
-
-                {/* Ville */}
-                <div className="mb-3">
-                    <label className="form-label">Ville</label>
-                    <Select
-                        className="select2"
-                        isDisabled={!selectedCountry || citiesLoading}
-                        options={(cities?.data || []).map((city: any) => ({value: city.id, label: city.name}))}
-                        placeholder={!selectedCountry ? "Choisissez d'abord un pays" : citiesLoading ? "Chargement..." : "Sélectionner une ville"}
-                        onChange={(city) => {
-                            setSelectedCity(city);
-                            setStepOneData((prev: any) => ({...prev, selectCity: city}));
-                        }}
-                        value={selectedCity}
-                    />
-                </div>
-
-                {/* Expéditeur */}
-                <div className="mb-3">
-                    <label className="form-label">Expéditeur</label>
-                    <Select
-                        className="select2"
-                        options={(senders?.data || []).map((s: any) => ({
-                            value: s.id,
-                            label: `${s.name}`,
-                            type: s.type
-                        }))}
-                        onChange={(option) => setSelectedSender(option)}
-                        value={selectedSender}
-                    />
-                </div>
-
-                {/* Bénéficiaire */}
-                <div className="mb-3">
-                    <label className="form-label">Bénéficiaire</label>
-                    <Select
-                        className="select2"
-                        options={selectedSender ? (beneficiaries?.data || []).map((b: any) => ({
-                            value: b.id,
-                            label: `${b.name}`,
-                            type: b.type
-                        })) : []}
-                        onChange={(option) => setSelectedBeneficiary(option)}
-                        value={selectedBeneficiary}
-                    />
-                </div>
-
-                {/* Relation */}
-                <div className="mb-3">
-                    <label className="form-label">Relation</label>
-                    <Select
-                        className="select2"
-                        options={(relations || relations || []).map((r: any) => ({value: r.id, label: r.name}))}
-                        isDisabled={!shouldFetchRelations}
-                        placeholder={shouldFetchRelations ? "Sélectionner une relation" : "Sélectionner expéditeur et bénéficiaire"}
-                        value={selectedRelaction}
-                        onChange={(relaction) => {
-                            setSelectedRelaction(relaction);
-                            setStepOneData((prev: any) => ({...prev, selectRelaction: relaction}));
-                        }}
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Commentaire</label>
-                    <input className="form-control" value={comment} onChange={(e) => {
-                        setComment(e.target.value);
-                        setStepOneData((prev: any) => ({...prev, comment: e.target.value}));
-                    }}/>
-                </div>
-            </Row>
-        </div>
-    );
-};
-
-
-// StepTwo.tsx
-interface StepTwoProps {
-    selectCountry?: any;
-    selectedSender?: any;
-    selectedBeneficiary?: any;
-    stepTwoData: any;
-    setStepTwoData: Function;
-}
-
-export const StepTwo: React.FC<StepTwoProps> = ({
-                                                    selectCountry,
-                                                    selectedSender,
-                                                    selectedBeneficiary,
-                                                    stepTwoData,
-                                                    setStepTwoData
-                                                }) => {
-    const [amount, setAmount] = useState<number>(0);
-    const [fees, setFees] = useState<string>("0.00");
-    const [amountXAF, setAmountXAF] = useState<string>("0.00");
-    const [accountNumber, setAccountNumber] = useState<string>("");
-    const [swiftCode, setSwiftCode] = useState<string>("");
-    const [selectedBank, setSelectedBank] = useState<any>(null);
-    const [selectedRaison, setSelectedRaison] = useState<any>(null);
-    const [selectedOriginFond, setSelectedOriginFond] = useState<any>(null);
-    const shouldFetchRelations = selectedSender && selectedBeneficiary;
-    const url = selectCountry ? `${API_ENDPOINTS.BANKLIST}/${selectCountry.value}` : undefined;
-    const requestUrl = url ?? "";
-    const {data: banks = {data: []}, loading: banksLoading,refetch:refechBank} = useFetchData<any>(requestUrl);
-    const urlTaux = selectCountry ? `${API_ENDPOINTS.TAUXEXCHANGE}/${selectCountry.value}` : undefined;
-    const requestUrlTaux = urlTaux ?? "";
-    const {data: taux = {data: {}}, refetch} = useFetchData<any>(requestUrlTaux, {amount});
-    // 🔹 Fetch des relations
-    const {data: origin_fondsResponse,refetch:refreshOrigins} = useFetchData<ResponseApi<any>>(
-        shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
-        shouldFetchRelations
-            ? {
-                sender_type: selectedSender.type,
-                beneficiary_type: selectedBeneficiary.type,
-                service: "origin_fonds",
-            }
-            : {}
-    );
-    const origin_fonds=origin_fondsResponse?.data?? [];
-    const {data: raisonsResponse,refetch:refreshRaisons} = useFetchData<ResponseApi<any>>(
-        shouldFetchRelations ? API_ENDPOINTS.WACEDATA : "",
-        shouldFetchRelations
-            ? {
-                sender_type: selectedSender.type,
-                beneficiary_type: selectedBeneficiary.type,
-                service: "raison",
-            }
-            : {}
-    );
-    const raison=raisonsResponse?.data?? [];
-    // 🔹 Refetch à chaque changement de montant
-    useEffect(() => {
-        if (selectCountry?.value && refetch) refetch({amount});
-    }, [amount, selectCountry, refetch]);
-    useEffect(()=>{
-        refechBank()
-    },[selectCountry])
-    useEffect(() => {
-        if (shouldFetchRelations) refreshRaisons() ;refreshOrigins();
-    }, [shouldFetchRelations]);
-    // 🔹 Calcul frais et XAF
-    useEffect(() => {
-        if (!taux?.data) return;
-
-        const tauxXafUsd = taux.data.taux_xaf_usd || 1;
-        const tauxCountry = taux.data.taux_country || 1;
-        const ratePercent = taux.data.rate || 0;
-
-        const amount_send = (amount / tauxXafUsd) * tauxCountry;
-        const rate = (ratePercent * amount) / 100;
-
-        setAmountXAF(amount_send.toFixed(2));
-        setFees(rate.toFixed(2));
-
-        setStepTwoData((prev: any) => ({
-            ...prev,
-            amount,
-            fees: rate.toFixed(2),
-            amountXAF: amount_send.toFixed(2),
-            selectedBank,
-            accountNumber,
-            swiftCode,
-
-        }));
-    }, [amount, taux, selectedBank, accountNumber, swiftCode]);
-
-    return (
-        <div className="tab-pane" id="basictab2">
-            <Row>
-                {/* Montant */}
-                <Row className="mb-3">
-                    <label className="col-md-3 col-form-label">Montant</label>
-                    <Col md={12}>
-                        <div className="input-group flex-nowrap">
-                            <span className="input-group-text">FCFA</span>
-                            <input type="number" className="form-control" value={amount}
-                                   onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}/>
-                        </div>
-                    </Col>
-                </Row>
-
-                {/* Frais */}
-                <Row className="mb-3">
-                    <label className="col-md-3 col-form-label">Frais</label>
-                    <Col md={12}>
-                        <div className="input-group flex-nowrap">
-                            <span className="input-group-text">FCFA</span>
-                            <input readOnly className="form-control" value={fees}/>
-                        </div>
-                    </Col>
-                </Row>
-
-                {/* Montant XAF */}
-                <Row className="mb-3">
-                    <label className="col-md-3 col-form-label">Montant ({selectCountry?.currency || "XAF"})</label>
-                    <Col md={12}>
-                        <div className="input-group flex-nowrap">
-                            <span className="input-group-text">{selectCountry?.currency || "XAF"}</span>
-                            <input readOnly className="form-control" value={amountXAF}/>
-                        </div>
-                    </Col>
-                </Row>
-
-                {/* Banque */}
-                <div className="mb-3">
-                    <label className="form-label">Banque</label>
-                    <Select
-                        className="select2"
-                        isDisabled={!selectCountry || banksLoading}
-                        options={(banks?.data || []).map((b: any) => ({value: b.id, label: b.name}))}
-                        value={selectedBank}
-                        onChange={(bank) => {
-                            setSelectedBank(bank);
-                            setStepTwoData((prev: any) => ({...prev, selectedBank: bank}));
-                        }}
-                    />
-                </div>
-
-                {/* Compte */}
-                <div className="mb-3">
-                    <label className="form-label">N° compte</label>
-                    <input className="form-control" value={accountNumber} onChange={(e) => {
-                        setAccountNumber(e.target.value);
-                        setStepTwoData((prev: any) => ({...prev, accountNumber: e.target.value}));
-                    }}/>
-                </div>
-
-                {/* Swift */}
-                <div className="mb-3">
-                    <label className="form-label">Swift Code</label>
-                    <input className="form-control" value={swiftCode} onChange={(e) => {
-                        setSwiftCode(e.target.value);
-                        setStepTwoData((prev: any) => ({...prev, swiftCode: e.target.value}));
-                    }}/>
-                </div>
-                {/* Origine des fonds */}
-                <div className="mb-3">
-                    <label className="form-label">Origine des fonds</label>
-                    <Select
-                        className="select2"
-                        isDisabled={!shouldFetchRelations}
-                        options={(origin_fonds || origin_fonds || []).map((r: any) => ({
-                            value: r.id,
-                            label: r.name
-                        }))}
-                        placeholder="Sélectionner une origine"
-                        value={selectedOriginFond}
-                        onChange={(origin) => {
-                            setSelectedOriginFond(origin);
-                            setStepTwoData((prev: any) => ({...prev, selectedOriginFond: origin}));
-                        }}
-                    />
-                </div>
-
-                {/* Raison */}
-                <div className="mb-3">
-                    <label className="form-label">Raison</label>
-                    <Select
-                        className="select2"
-                        isDisabled={!shouldFetchRelations}
-                        options={(raison || []).map((r: any) => ({value: r.id, label: r.name}))}
-                        placeholder="Sélectionner une raison d'envoi"
-                        value={selectedRaison}
-                        onChange={(raison) => {
-                            setSelectedRaison(raison);
-                            setStepTwoData((prev: any) => ({...prev, selectRaison: raison}));
-                        }}
-                    />
-                </div>
-            </Row>
-        </div>
-    );
-};
-
-
-// StepThree.tsx
-interface StepThreeProps {
-    stepOneData: any;
-    stepTwoData: any;
-}
-
-
-export const StepThree: React.FC<StepThreeProps> = ({ stepOneData, stepTwoData }) => {
-    const [loading, setLoading] = useState(false);
-    const { isTrue: isOpen, toggle: hide } = useToggle();
-    const { showNotification } = useNotificationContext();
-    const { data: session } = useSession();
-    const [error, setError] = useState<string | null>(null);
-
-    /** 🔹 Construction du payload */
-    const buildPayload = () => ({
-        sender_id: stepOneData.sender?.value,
-        beneficiary_id: stepOneData.beneficiary?.value,
-        amount: stepTwoData.amount,
-        rate: stepTwoData.fees,
-        acount_number: stepTwoData.accountNumber,
-        origin_fond: stepTwoData.selectedOriginFond?.value,
-        relaction: stepOneData.selectRelaction?.value,
-        motif: stepTwoData.selectRaison?.value,
-        comment: stepOneData.comment,
-        bank_name: stepTwoData.selectedBank?.label,
-        operator_id: stepTwoData.selectedBank?.value,
-        wallet: "WACEPAY",
-        type: "B",
-        country_id: stepOneData.country?.value,
-        city_id: stepOneData.selectCity?.value,
-        swiftCode: stepTwoData.swiftCode,
-        ifscCode: stepTwoData.ifscode,
-        total_amount: stepTwoData.amountXAF,
-    });
-
-    /** 🔹 Envoi de la transaction */
-    const sendTransfert = async () => {
-        setError(null);
-        setLoading(true);
-
-        try {
-            const payload = buildPayload();
-
-            const res = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/bank`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${session?.accessToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-
-                showNotification({
-                    title: "Succès 🎉",
-                    message: "Le transfert a été envoyé avec succès.",
-                    variant: "success",
-                });
-
-                // Exemple si tu veux rediriger plus tard
-                // navigate("/connexion-client/attente-paiement", { state: { referenceId: data.referenceId } });
-            } else {
-                // ⚠️ Gestion d’erreurs précises
-                const apiMessage =
-                    data?.error?.details ||
-                    data?.message ||
-                    data?.error ||
-                    "Erreur lors du paiement.";
-
-                throw new Error(apiMessage);
-            }
-        } catch (err: any) {
-            console.error("❌ Erreur API:", err.message);
-            setError(err.message);
-
-            showNotification({
-                title: "Échec du transfert ⚠️",
-                message: err.message || "Une erreur s’est produite lors de l’envoi.",
-                variant: "danger",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="tab-pane" id="basictab3">
-            {/* ✅ Titre principal */}
-            <Row className="text-center mb-4">
-                <Col xs={12}>
-                    <h2>
-                        <IconifyIcon icon="bi:check2-all" />
-                    </h2>
-                    <h4>Récapitulatif de la transaction</h4>
-                </Col>
-            </Row>
-
-            {/* ✅ Informations sur l'expéditeur / bénéficiaire */}
-            <Row className="g-3">
-                <Col md={6}>
-                    <Card>
-                        <Card.Header>Expéditeur & Pays</Card.Header>
-                        <ListGroup variant="flush">
-                            <ListGroup.Item>
-                                <strong>Pays :</strong> {stepOneData.country?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Ville :</strong> {stepOneData.selectCity?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Expéditeur :</strong> {stepOneData.sender?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Bénéficiaire :</strong> {stepOneData.beneficiary?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Relation :</strong> {stepOneData.selectRelaction?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Raison :</strong> {stepTwoData.selectRaison?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Origine des fonds :</strong> {stepTwoData.selectedOriginFond?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Commentaire :</strong> {stepOneData.comment || "-"}
-                            </ListGroup.Item>
-                        </ListGroup>
-                    </Card>
-                </Col>
-
-                {/* ✅ Informations sur la transaction */}
-                <Col md={6}>
-                    <Card>
-                        <Card.Header>Transaction</Card.Header>
-                        <ListGroup variant="flush">
-                            <ListGroup.Item>
-                                <strong>Montant :</strong> {stepTwoData.amount} FCFA
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Frais :</strong> {stepTwoData.fees} FCFA
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Montant ({stepOneData.country?.currency}) :</strong> {stepTwoData.amountXAF}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Banque :</strong> {stepTwoData.selectedBank?.label || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>N° Compte :</strong> {stepTwoData.accountNumber || "-"}
-                            </ListGroup.Item>
-                            <ListGroup.Item>
-                                <strong>Swift Code :</strong> {stepTwoData.swiftCode || "-"}
-                            </ListGroup.Item>
-                        </ListGroup>
-                    </Card>
-                </Col>
-            </Row>
-            {/* ✅ Bouton d’envoi avec loader */}
-            <Row className="mt-4">
-                <Col className="text-center">
-                    <Button
-                        variant="primary"
-                        disabled={loading}
-                        onClick={sendTransfert}
-                    >
-                        {loading ? (
-                            <>
-                                <Spinner
-                                    tag="span"
-                                    type="border"
-                                    size="sm"
-                                    className="me-2"
-                                />
-                                Envoi en cours...
-                            </>
-                        ) : (
-                            "Envoyer le transfert"
-                        )}
-                    </Button>
-
-                    {error && <div className="text-danger mt-2">⚠️ {error}</div>}
-                </Col>
-            </Row>
-        </div>
-    );
-};
-
-
+/**
+ * Saisie d'un transfert par le personnel pour un client. Les expéditeurs, bénéficiaires et destinations sont ceux que
+ * le client a enregistrés (le back-office ne les crée pas). Le serveur calcule frais, taux et total : le total affiché est
+ * renvoyé en `expectedTotalDebit` et le transfert est refusé si un barème a changé entre-temps.
+ */
 const AddTransactionCard: React.FC = () => {
-    const wizardRef = useRef<StepWizardInstance | null>(null);
-    const [activeStep, setActiveStep] = useState(1);
-    const {data: session, status} = useSession(); //
-    const [stepOneData, setStepOneData] = useState({
-        senderName: "",
-        senderEmail: "",
-        // Ajouter d'autres champs StepOne si nécessaire
-    });
+  const api = useApi()
+  const router = useRouter()
+  const { showNotification } = useNotificationContext()
 
-    const [stepTwoData, setStepTwoData] = useState({
-        amount: 0,
-        fees: "0.00",
-        amountXAF: "0.00",
-        selectedBank: null,
-        accountNumber: "",
-        swiftCode: "",
-        originFond: null,
-        raison: null,
-    });
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [customer, setCustomer] = useState<CustomerRow | null>(null)
+  const [senderId, setSenderId] = useState('')
+  const [beneficiaryId, setBeneficiaryId] = useState('')
+  const [destinationId, setDestinationId] = useState('')
+  const [amount, setAmount] = useState('')
+  const [purpose, setPurpose] = useState('')
+  const [source, setSource] = useState('')
+  const [relationship, setRelationship] = useState('')
+  const [comment, setComment] = useState('')
+  const [funding, setFunding] = useState<'WALLET' | 'OFFLINE_RECEIPT'>('WALLET')
+  const [receipt, setReceipt] = useState('')
+  const [quote, setQuote] = useState<Quote | null>(null)
+  const [quoteError, setQuoteError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-    // si ton hook renvoie un état de chargement
-    const [selectedCountry, setSelectedCountry] = useState<any>(null);
-    const [selectedSender, setSelectedSender] = useState<any>(null);
-    const [selectedBeneficiary, setSelectedBeneficiary] = useState<any>(null);
-    // 🔹 Si la session n’est pas encore disponible, on ne fait pas d’appel API
-    const userId = session?.user?.id;
+  useEffect(() => {
+    const handler = debounce(() => setDebouncedSearch(customerSearch), 400)
+    handler()
+    return () => handler.cancel()
+  }, [customerSearch])
 
-    const {data: countries = []} = useFetchData<any[]>(
-        API_ENDPOINTS.COUNTRIES
-    );
-    const url = userId ? `${API_ENDPOINTS.SENDERS}/${userId}` : undefined;
-    const requestUrl = url ?? "";
-    const {data: senders = []} = useFetchData<any[]>(
-        requestUrl
-    );
+  const customers = useFetchData<Page<CustomerRow>>(API_ENDPOINTS.CUSTOMERS, { size: 8, search: debouncedSearch }, !customer && debouncedSearch.length >= 2)
 
+  const senders = useFetchData<Page<Party>>(API_ENDPOINTS.PARTIES, { role: 'SENDER', customerId: customer?.id, size: 100 }, Boolean(customer))
+  const beneficiaries = useFetchData<Page<Party>>(API_ENDPOINTS.PARTIES, { role: 'BENEFICIARY', customerId: customer?.id, size: 100 }, Boolean(customer))
+  const beneficiary = useFetchData<{ destinations?: Destination[] } & Party>(`${API_ENDPOINTS.PARTIES}/${beneficiaryId || 'none'}`, {}, Boolean(beneficiaryId))
 
-    const nextStep = () => {
-        if (wizardRef.current) {
-            wizardRef.current.nextStep();
-            setActiveStep((prev) => prev + 1);
-        }
-    };
+  const sender = senders.data?.content.find((p) => p.id === senderId)
+  const beneficiaryParty = beneficiaries.data?.content.find((p) => p.id === beneficiaryId)
+  const pair = pairOf(sender, beneficiaryParty)
+  const purposes = useFetchData<ReferenceValue[]>(API_ENDPOINTS.PURPOSES, { partyTypePair: pair })
+  const sources = useFetchData<ReferenceValue[]>(API_ENDPOINTS.SOURCES_OF_FUNDS, { partyTypePair: pair })
+  const relationships = useFetchData<ReferenceValue[]>(API_ENDPOINTS.RELATIONSHIPS, { partyTypePair: pair })
 
-    const prevStep = () => {
-        if (wizardRef.current) {
-            wizardRef.current.previousStep();
-            setActiveStep((prev) => prev - 1);
-        }
-    };
+  // Un changement de bénéficiaire invalide la destination choisie.
+  useEffect(() => setDestinationId(''), [beneficiaryId])
 
-    const goToStep = (step: number) => {
-        if (wizardRef.current) {
-            wizardRef.current.goToStep(step);
-            setActiveStep(step);
-        }
-    };
+  // Devis du serveur à chaque changement de destination ou de montant (debounce).
+  const quoteKey = `${customer?.id}|${destinationId}|${amount}`
+  useEffect(() => {
+    setQuote(null)
+    setQuoteError(null)
+    if (!customer || !destinationId || !/^\d{1,15}(\.\d{1,4})?$/.test(amount) || Number(amount) <= 0) return
+    const handle = setTimeout(async () => {
+      try {
+        setQuote(await api.post<Quote>(`${API_ENDPOINTS.TRANSFERS}/quote`, { destinationId, sourceAmount: amount, customerId: customer.id }))
+      } catch (e) {
+        setQuoteError(e instanceof ApiError ? e.fullMessage : 'Devis impossible')
+      }
+    }, 500)
+    return () => clearTimeout(handle)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteKey, api.token])
 
-    const steps = [1, 2, 3];
+  // Une clé d'idempotence par saisie : réutilisée si on renvoie la même demande (double clic, réseau), changée si le contenu change.
+  const body = useMemo(
+    () => ({
+      customerId: customer?.id,
+      senderId,
+      beneficiaryId,
+      destinationId,
+      sourceAmount: amount,
+      purposeCode: purpose,
+      sourceOfFundsCode: source,
+      relationshipCode: relationship,
+      comment: comment || undefined,
+      expectedTotalDebit: quote?.totalDebit.amount,
+      fundingSource: funding,
+      receiptReference: funding === 'OFFLINE_RECEIPT' ? receipt : undefined,
+    }),
+    [customer, senderId, beneficiaryId, destinationId, amount, purpose, source, relationship, comment, quote, funding, receipt],
+  )
+  const key = useRef(newIdempotencyKey())
+  useEffect(() => {
+    key.current = newIdempotencyKey()
+  }, [body])
 
+  const ready =
+    customer && senderId && beneficiaryId && destinationId && quote && purpose && source && relationship && (funding === 'WALLET' ? quote.sufficientFunds : receipt.trim().length > 0)
 
-    const loading = status === "loading";
+  const submit = async () => {
+    setBusy(true)
+    try {
+      const created = await api.post<{ id: string; reference: string }>(API_ENDPOINTS.TRANSFERS, body, key.current)
+      showNotification({ message: `Transfert ${created.reference} enregistré`, variant: 'success' })
+      router.push(`/transactions/${created.id}`)
+    } catch (e) {
+      showNotification({ message: e instanceof ApiError ? e.fullMessage : 'Erreur inattendue', variant: 'danger' })
+    } finally {
+      setBusy(false)
+    }
+  }
 
-    if (loading) {
-        return (
-            <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Chargement...</span>
-                </div>
+  const select = (label: string, value: string, onChange: (v: string) => void, options: { value: string; label: string }[], disabled = false) => (
+    <Form.Group className="mb-3">
+      <Form.Label>{label}</Form.Label>
+      <Form.Select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+        <option value="">— choisir —</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Form.Select>
+    </Form.Group>
+  )
+
+  return (
+    <div>
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Header className="bg-light fw-bold small py-2">1. Client</Card.Header>
+        <Card.Body>
+          {customer ? (
+            <div className="d-flex align-items-center gap-3">
+              <strong>{customer.displayName}</strong>
+              {customer.kycStatus !== 'VERIFIED' && <span className="badge bg-warning">Identité non vérifiée : l'API refusera l'envoi</span>}
+              <Button
+                variant="link"
+                onClick={() => {
+                  setCustomer(null)
+                  setSenderId('')
+                  setBeneficiaryId('')
+                }}
+              >
+                Changer
+              </Button>
             </div>
-        );
-    }
+          ) : (
+            <>
+              <Form.Control placeholder="Rechercher un client (2 lettres minimum)" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} />
+              {(customers.data?.content ?? []).map((c) => (
+                <div key={c.id} className="p-2 border-bottom" style={{ cursor: 'pointer' }} onClick={() => setCustomer(c)}>
+                  {c.displayName} <span className="text-muted small">· {c.kycStatus}</span>
+                </div>
+              ))}
+            </>
+          )}
+        </Card.Body>
+      </Card>
 
-    if (!session) {
-        return <p className="text-center">Vous devez être connecté pour accéder à ce formulaire.</p>;
-    }
+      {customer && (
+        <>
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Header className="bg-light fw-bold small py-2">2. Expéditeur, bénéficiaire et destination</Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={4}>
+                  {select('Expéditeur', senderId, setSenderId, (senders.data?.content ?? []).map((p) => ({ value: p.id, label: partyName(p) })))}
+                </Col>
+                <Col md={4}>
+                  {select('Bénéficiaire', beneficiaryId, setBeneficiaryId, (beneficiaries.data?.content ?? []).map((p) => ({ value: p.id, label: partyName(p) })))}
+                </Col>
+                <Col md={4}>
+                  {select(
+                    'Destination (compte ou mobile money)',
+                    destinationId,
+                    setDestinationId,
+                    (beneficiary.data?.destinations ?? []).map((d) => ({
+                      value: d.id,
+                      label: `${d.bank?.name ?? d.mobileOperator?.name ?? d.kind} · ${d.accountNumberMasked}`,
+                    })),
+                    !beneficiaryId,
+                  )}
+                </Col>
+              </Row>
+              {(senders.data?.content.length === 0 || beneficiaries.data?.content.length === 0) && (
+                <Alert variant="info" className="mb-0">
+                  Ce client n'a pas encore enregistré d'expéditeur ou de bénéficiaire : il doit le faire depuis l'application.
+                </Alert>
+              )}
+            </Card.Body>
+          </Card>
 
-    return (
-        <Row className="justify-content-center">
-            <Col lg={8}>
-                <ComponentContainerCard title="Ajouter une transaction">
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Header className="bg-light fw-bold small py-2">3. Montant et justification</Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Montant à envoyer</Form.Label>
+                    <Form.Control inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(',', '.'))} placeholder="10000" />
+                  </Form.Group>
+                </Col>
+                <Col md={8}>
+                  {quoteError && <Alert variant="danger" className="py-2">{quoteError}</Alert>}
+                  {quote && (
+                    <Alert variant={quote.sufficientFunds || funding === 'OFFLINE_RECEIPT' ? 'success' : 'warning'} className="py-2 mb-3">
+                      Frais {formatMoney(quote.fee)}
+                      {quote.feePercent ? ` (${quote.feePercent} %)` : ''} · <strong>Total {formatMoney(quote.totalDebit)}</strong>
+                      {quote.destinationAmount && <> · Le bénéficiaire reçoit {formatMoney(quote.destinationAmount)}</>}
+                      {quote.availableBalance && <> · Solde disponible {formatMoney(quote.availableBalance)}</>}
+                    </Alert>
+                  )}
+                </Col>
+              </Row>
+              <Row>
+                <Col md={4}>{select('Motif', purpose, setPurpose, (purposes.data ?? []).map((v) => ({ value: v.code, label: v.label })))}</Col>
+                <Col md={4}>{select('Origine des fonds', source, setSource, (sources.data ?? []).map((v) => ({ value: v.code, label: v.label })))}</Col>
+                <Col md={4}>{select('Lien avec le bénéficiaire', relationship, setRelationship, (relationships.data ?? []).map((v) => ({ value: v.code, label: v.label })))}</Col>
+              </Row>
+              <Form.Group className="mb-3">
+                <Form.Label>Commentaire</Form.Label>
+                <Form.Control value={comment} onChange={(e) => setComment(e.target.value)} />
+              </Form.Group>
+            </Card.Body>
+          </Card>
 
-                    <ul className="nav nav-pills nav-justified form-wizard-header mb-4 justify-content-center">
-                        {["Information générales", "Détail de la transaction", "Récapitulatif"].map((label, idx) => (
-                            <li className="nav-item" key={idx}>
-                                <a
-                                    href={`#basictab${idx + 1}`}
-                                    className={`nav-link rounded-0 py-2 ${activeStep === idx + 1 ? "active" : ""}`}
-                                  //  onClick={() => goToStep(idx + 1)}
-                                >
-                                    <IconifyIcon
-                                        icon={["bi:person-circle", "bi:emoji-smile", "bi:check2-circle"][idx]}
-                                        className="fs-18 align-middle me-1"
-                                    />
-                                    <span className="d-none d-sm-inline">{label}</span>
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Header className="bg-light fw-bold small py-2">4. Financement</Card.Header>
+            <Card.Body>
+              <Form.Check type="radio" id="f-wallet" name="funding" label="Débiter le portefeuille du client" checked={funding === 'WALLET'} onChange={() => setFunding('WALLET')} />
+              <Form.Check type="radio" id="f-offline" name="funding" label="Le client a payé hors plateforme (espèces, virement) : le portefeuille est crédité puis débité" checked={funding === 'OFFLINE_RECEIPT'} onChange={() => setFunding('OFFLINE_RECEIPT')} />
+              {funding === 'OFFLINE_RECEIPT' && (
+                <Form.Group className="mt-3">
+                  <Form.Label>Référence du justificatif de paiement (obligatoire)</Form.Label>
+                  <Form.Control value={receipt} onChange={(e) => setReceipt(e.target.value)} />
+                </Form.Group>
+              )}
+            </Card.Body>
+          </Card>
 
-                    {/* Wizard Body */}
-                    <div className="tab-content b-0 mb-0 d-flex flex-column align-items-center">
-                        <ProgressBar
-                            style={{height: 7, width: "100%"}}
-                            animated
-                            striped
-                            variant="success"
-                            now={(activeStep / steps.length) * 100}
-                            className="mb-3 progress-sm"
-                        />
-
-                        <StepWizard
-                            instance={(wizard: any) => {
-                                wizardRef.current = wizard;
-                            }}
-                            onStepChange={(stats) => setActiveStep(stats.activeStep)}
-                        >
-                            <StepOne
-                                countries={countries}
-                                senders={senders}
-                                selectedCountry={selectedCountry}
-                                setSelectedCountry={setSelectedCountry}
-                                selectedSender={selectedSender}
-                                setSelectedSender={setSelectedSender}
-                                selectedBeneficiary={selectedBeneficiary}
-                                setSelectedBeneficiary={setSelectedBeneficiary}
-                                stepOneData={stepOneData}
-                                setStepOneData={setStepOneData}
-                            />
-                            <StepTwo
-                                selectCountry={selectedCountry}
-                                selectedSender={selectedSender}
-                                selectedBeneficiary={selectedBeneficiary}
-                                stepTwoData={stepTwoData}
-                                setStepTwoData={setStepTwoData}
-                            />
-                            <StepThree stepOneData={stepOneData} stepTwoData={stepTwoData}/>
-                        </StepWizard>
-
-
-                        {/* Navigation Buttons */}
-                        <div className="d-flex wizard justify-content-center flex-wrap gap-2 mt-3">
-                            <Button className="btn btn-primary" onClick={() => goToStep(1)} disabled={activeStep === 1}>
-                                First
-                            </Button>
-                            <Button className="btn btn-primary" onClick={prevStep} disabled={activeStep === 1}>
-                                <IconifyIcon icon="bx-left-arrow-alt" className="me-2"/>
-                                Back
-                            </Button>
-                            <Button className="btn btn-primary" onClick={nextStep} disabled={activeStep === 3}>
-                                Next
-                                <IconifyIcon icon="bx-right-arrow-alt" className="ms-2"/>
-                            </Button>
-                            <Button className="btn btn-primary" onClick={() => goToStep(3)} disabled={activeStep === 3}>
-                                Finish
-                            </Button>
-                        </div>
-                    </div>
-                </ComponentContainerCard>
-            </Col>
-        </Row>
-    );
-};
-
+          <div className="text-center">
+            <Button variant="primary" disabled={!ready || busy} onClick={submit}>
+              {busy ? <Spinner size="sm" color="light" className="me-2" /> : <IconifyIcon icon="ri:send-plane-line" className="me-1" />}
+              Envoyer le transfert
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export default AddTransactionCard

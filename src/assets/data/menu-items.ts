@@ -47,15 +47,22 @@ export const MENU_ITEMS: MenuItemType[] = [
     roles: []
   },
   {
+    key: 'adjustments',
+    label: 'Ajustements de solde',
+    icon: Wallet2,
+    url: '/adjustments',
+    roles: []
+  },
+  {
     key: 'senders',
-    label: 'Expediteurs',
+    label: 'Expéditeurs',
     icon: Users,
     url: '/senders',
     roles: []
   },
   {
     key: 'beneficiaries',
-    label: 'Beneficiares',
+    label: 'Bénéficiaires',
     icon: Users,
     url: '/beneficiaries',
     roles: []
@@ -75,7 +82,7 @@ export const MENU_ITEMS: MenuItemType[] = [
   },
   {
     key: 'employee',
-    label: 'Employes',
+    label: 'Personnel',
     icon: Users,
     url: '/employes',
     roles: []

@@ -1,111 +1,81 @@
 'use client'
-import IconifyIcon from '@/components/wrappers/IconifyIcon'
+import React, { useState } from 'react'
+import { Badge, Button, Card, CardHeader, Col, Form, Row, Table } from 'react-bootstrap'
+import { useFetchData } from '@/hooks/useFetchData'
+import { useApi } from '@/hooks/useApi'
+import { useNotificationContext } from '@/context/useNotificationContext'
+import API_ENDPOINTS from '../../../(other)/api/Constant'
+import { ApiError } from '@/lib/api/http'
 
-import React, { useState, useEffect } from "react";
-import debounce from "lodash.debounce";
-import { Card, CardHeader, Table, Dropdown, DropdownToggle, DropdownMenu, DropdownItem } from "react-bootstrap";
-import Link from "next/link";
-import {useFetchData} from "../../../../hooks/useFetchData";
-import API_ENDPOINTS from "../../../(other)/api/Constant";
+type Zone = { id: number; code: string; name: string; countries?: string[] }
 
-
-interface Zone {
-  id: number;
-  libelle: string;
-}
-
-interface CountryResponse {
-  data: Zone[];
-}
-
+/** Zones tarifaires : un barème de frais s'applique à chaque zone (pays regroupés). */
 const ZoneCard: React.FC = () => {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const api = useApi()
+  const { showNotification } = useNotificationContext()
+  const { data, loading, error, refetch } = useFetchData<Zone[]>(API_ENDPOINTS.PRICING_ZONES)
+  const [form, setForm] = useState({ code: '', name: '', countries: '' })
+  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    const handler = debounce((value: string) => setDebouncedSearch(value), 500);
-    handler(search);
-    return () => handler.cancel();
-  }, [search]);
-
-  const { data, loading, error, refetch } = useFetchData<CountryResponse>(
-      API_ENDPOINTS.ZONES,
-      { page, limit, search: debouncedSearch }
-  );
-
-  useEffect(() => {
-    refetch?.({ page, limit, search: debouncedSearch });
-  }, [page, limit, debouncedSearch, refetch]);
-
-  const countries = data?.data ?? [];
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const countries = form.countries.split(/[\s,;]+/).map((c) => c.toUpperCase()).filter(Boolean)
+      await api.post(API_ENDPOINTS.PRICING_ZONES, { code: form.code, name: form.name, countries: countries.length ? countries : undefined })
+      showNotification({ message: 'Zone créée', variant: 'success' })
+      setForm({ code: '', name: '', countries: '' })
+      await refetch()
+    } catch (err) {
+      showNotification({ message: err instanceof ApiError ? err.fullMessage : 'Erreur inattendue', variant: 'danger' })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-      <Card>
-        <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
-          <div className="flex-grow-1">
-            <h4 className="header-title">Pays</h4>
-          </div>
-          <div className="d-flex flex-wrap flex-lg-nowrap gap-2">
-            <div className="flex-shrink-0 d-flex align-items-center gap-2">
-              <div className="position-relative">
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="form-control ps-4"
-                    placeholder="Search Here..."
-                />
-                <IconifyIcon icon="ti:search" className="ti position-absolute top-50 translate-middle-y start-0 ms-2" />
-              </div>
-            </div>
-            <Link href="/recharges/add-recharge" className="btn btn-primary">
-              <IconifyIcon icon="ri:add-line" className="me-1" />
-              Ajouter
-            </Link>
-          </div>
-        </CardHeader>
-
-        <div className="table-responsive">
-          {loading ? (
-              <p>Chargement...</p>
-          ) : error ? (
-              <p>❌ {error.message}</p>
-          ) : (
-              <Table className="table-hover text-nowrap mb-0">
-                <thead className="bg-light-subtle">
-                <tr>
-                  <th className="ps-3" style={{ width: 50 }}><input type="checkbox" className="form-check-input" /></th>
-                  <th className="fs-12 text-uppercase text-muted">ID</th>
-                  <th className="fs-12 text-uppercase text-muted">Nom</th>
-                  <th className="text-center fs-12 text-uppercase text-muted" style={{ width: 120 }}>Action</th>
+    <Card>
+      <CardHeader className="border-bottom">
+        <h4 className="header-title mb-0">Zones tarifaires</h4>
+      </CardHeader>
+      <Card.Body className="border-bottom">
+        <Form onSubmit={create}>
+          <Row className="g-2">
+            <Col md={2}><Form.Control required placeholder="Code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></Col>
+            <Col md={4}><Form.Control required placeholder="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Col>
+            <Col md={4}><Form.Control placeholder="Pays (codes ISO, ex. CM, CG, GA)" value={form.countries} onChange={(e) => setForm({ ...form, countries: e.target.value })} /></Col>
+            <Col md={2}><Button type="submit" disabled={busy} className="w-100">Créer</Button></Col>
+          </Row>
+        </Form>
+      </Card.Body>
+      <div className="table-responsive">
+        {loading && !data ? (
+          <p className="p-3">Chargement...</p>
+        ) : error ? (
+          <p className="p-3 text-danger">❌ {error.message}</p>
+        ) : (
+          <Table className="table-hover mb-0">
+            <thead className="bg-light-subtle">
+              <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Pays</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data ?? []).map((z) => (
+                <tr key={z.id}>
+                  <td>{z.code}</td>
+                  <td>{z.name}</td>
+                  <td>{(z.countries ?? []).map((c) => <Badge key={c} bg="light" text="dark" className="me-1">{c}</Badge>)}</td>
                 </tr>
-                </thead>
-                <tbody>
-                {countries.map((t) => (
-                    <tr key={t.id}>
-                      <td className="ps-3"><input type="checkbox" className="form-check-input" /></td>
-                      <td><span className="text-muted fw-semibold">#{t.id}</span></td>
-                      <td><h6 className="fs-14 mb-0">{t.libelle || "-"}</h6></td>
-                      <td className="pe-3">
-                        <div className="hstack gap-1 justify-content-end">
-                          <Link
-                              href={`/zones/${t.id}`} // ✅ utilisation correcte des backticks
-                              className="btn btn-soft-primary btn-sm btn-icon rounded-circle"
-                          >
-                            <IconifyIcon icon="ri:eye-line" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                ))}
-                </tbody>
-              </Table>
-          )}
-        </div>
-      </Card>
-  );
-};
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+    </Card>
+  )
+}
 
-export default ZoneCard;
+export default ZoneCard

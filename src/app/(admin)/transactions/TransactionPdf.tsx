@@ -2,18 +2,10 @@ import { Modal, Button } from "react-bootstrap";
 import React, { useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-interface Transaction {
-    id: number;
-    typetransaction: string;
-    datetransaction: string;
-    beneficiare?: string;
-    customer?: string;
-    montanttotal?: number;
-    montant?: number;
-    monaire?: string;
-    country?: string;
-    status?: string;
-}
+import type { TransferSummary } from "@/lib/api/types";
+import { formatMoney, formatDate, TRANSFER_STATUS_LABELS } from "@/lib/api/format";
+
+type Transaction = TransferSummary;
 
 interface TransactionPdfProps {
     transactions: Transaction[];
@@ -115,11 +107,13 @@ export default function TransactionPdfModal({
            pdf.save(`transactions_${new Date().toISOString().slice(0, 10)}.pdf`);
        };*/
 
-    /** 🔹 Calcul du total global */
-    const totalGlobal = transactions.reduce(
-        (acc, t) => acc + (t.montant || 0),
-        0
-    );
+    /** Totaux par devise (jamais additionner des devises différentes), transferts payés uniquement. */
+    const totals = transactions
+        .filter((t) => t.status === "COMPLETED")
+        .reduce<Record<string, number>>((acc, t) => {
+            acc[t.sourceAmount.currency] = (acc[t.sourceAmount.currency] ?? 0) + Number(t.sourceAmount.amount);
+            return acc;
+        }, {});
 
     return (
         <Modal show={show} onHide={onClose} size="lg" centered>
@@ -155,11 +149,11 @@ export default function TransactionPdfModal({
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Type</th>
+                            <th>Référence</th>
                             <th>Expéditeur</th>
                             <th>Bénéficiaire</th>
-                            <th>Montant</th>
-                            <th>Montant Envoye</th>
+                            <th>Montant envoyé</th>
+                            <th>Reçu par le bénéficiaire</th>
                             <th>Date</th>
                             <th>Statut</th>
                         </tr>
@@ -167,7 +161,7 @@ export default function TransactionPdfModal({
                         <tbody>
                         {transactions.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="no-data">
+                                <td colSpan={8} className="no-data">
                                     Aucune transaction trouvée.
                                 </td>
                             </tr>
@@ -175,34 +169,16 @@ export default function TransactionPdfModal({
                             transactions.map((t, i) => (
                                 <tr key={t.id}>
                                     <td>{i + 1}</td>
-                                    <td>{t.typetransaction || "-"}</td>
-                                    <td>{t.customer || "-"}</td>
-                                    <td>{t.beneficiare || "-"}</td>
+                                    <td>{t.reference}</td>
+                                    <td>{t.senderName || "-"}</td>
+                                    <td>{t.beneficiaryName || "-"}</td>
+                                    <td>{formatMoney(t.sourceAmount)}</td>
+                                    <td>{formatMoney(t.destinationAmount)}</td>
+                                    <td>{formatDate(t.createdAt)}</td>
                                     <td>
-                                        {t.montant
-                                            ? `${t.montant.toLocaleString()} FCFA`
-                                            : "-"}
-                                    </td>
-                                    <td>
-                                        {t.montanttotal
-                                            ? `${t.montanttotal.toLocaleString()} ${t.monaire || ""}`
-                                            : "-"}
-                                    </td>
-                                    <td>
-                                        {t.datetransaction
-                                            ? new Date(t.datetransaction).toLocaleDateString("fr-FR", {
-                                                day: "2-digit",
-                                                month: "short",
-                                                year: "numeric",
-                                            })
-                                            : "-"}
-                                    </td>
-                                    <td>
-                      <span
-                          className={`status ${t.status?.toLowerCase().replace(/\s/g, "-")}`}
-                      >
-                        {t.status}
-                      </span>
+                                        <span className={`status ${t.status.toLowerCase()}`}>
+                                            {TRANSFER_STATUS_LABELS[t.status]?.label ?? t.status}
+                                        </span>
                                     </td>
                                 </tr>
                             ))
@@ -213,9 +189,8 @@ export default function TransactionPdfModal({
                     {/* ===== TOTAL GLOBAL ===== */}
                     {transactions.length > 0 && (
                         <div className="pdf-total">
-                            <strong>Total Global : </strong>
-                            {totalGlobal.toLocaleString()}{" "}
-                            { "FCFA"}
+                            <strong>Total payé : </strong>
+                            {Object.entries(totals).map(([cur, amount]) => formatMoney({ amount: String(amount), currency: cur })).join(" · ") || "-"}
                         </div>
                     )}
 
@@ -315,16 +290,18 @@ export default function TransactionPdfModal({
               font-weight: 600;
             }
 
-            .status.effectue {
+            .status.completed {
               background: #d1e7dd;
               color: #0f5132;
             }
-            .status.en-validation {
+            .status.processing,
+            .status.payout_pending {
               background: #fff3cd;
               color: #664d03;
             }
-            .status.annulee,
-            .status.echoue {
+            .status.cancelled,
+            .status.refunded,
+            .status.failed {
               background: #f8d7da;
               color: #842029;
             }

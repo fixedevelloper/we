@@ -3,9 +3,10 @@ import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import { formatDateTime, formatMoney, partyName, TRANSFER_STATUS_LABELS } from "@/lib/api/format";
 
 interface TransactionReceiptProps {
-    transaction: any;
+    transaction: any; // AdminTransfer (contrat OpenAPI)
     show: boolean;
     onClose: () => void;
 }
@@ -15,9 +16,9 @@ export default function TransactionReceiptModal({ transaction, show, onClose }: 
     const [qrCode, setQrCode] = useState<string>("");
 
     useEffect(() => {
-        if (transaction?.numero_transaction) {
+        if (transaction?.reference) {
             QRCode.toDataURL(
-                `https://wetransfercash.com/verify/${transaction.numero_transaction}`,
+                `https://wetransfercash.com/verify/${transaction.reference}`,
                 { width: 150 }
             ).then(setQrCode);
         }
@@ -32,7 +33,7 @@ export default function TransactionReceiptModal({ transaction, show, onClose }: 
         const width = pdf.internal.pageSize.getWidth();
         const height = (canvas.height * width) / canvas.width;
         pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        pdf.save(`recu_transaction_${transaction.id}.pdf`);
+        pdf.save(`recu_${transaction.reference}.pdf`);
     };
 
     return (
@@ -51,8 +52,8 @@ export default function TransactionReceiptModal({ transaction, show, onClose }: 
                                 <p>Reçu officiel de transaction</p>
                             </div>
                             <div className="receipt-info">
-                                <p>Date : {transaction.date_transaction}</p>
-                                <p>Réf : {transaction.numero_transaction}</p>
+                                <p>Date : {formatDateTime(transaction.createdAt)}</p>
+                                <p>Réf : {transaction.reference}</p>
                             </div>
                         </div>
 
@@ -65,24 +66,25 @@ export default function TransactionReceiptModal({ transaction, show, onClose }: 
                         <div className="details-grid">
                             <div>
                                 <h3>Expéditeur</h3>
-                                <p><b>Nom :</b> {transaction.sender_name}</p>
-                                <p><b>Pays :</b> {transaction.sender_country}</p>
-                                <p><b>Ville :</b> {transaction.sender_city}</p>
+                                <p><b>Nom :</b> {partyName(transaction.sender)}</p>
+                                <p><b>Pays :</b> {transaction.sender?.countryCode ?? "-"}</p>
+                                <p><b>Ville :</b> {transaction.sender?.city ?? "-"}</p>
                             </div>
                             <div>
                                 <h3>Bénéficiaire</h3>
-                                <p><b>Nom :</b> {transaction.beneficiary_name}</p>
-                                <p><b>Pays :</b> {transaction.beneficiary_country}</p>
-                                <p><b>Téléphone :</b> {transaction.beneficiary_phone}</p>
+                                <p><b>Nom :</b> {partyName(transaction.beneficiary)}</p>
+                                <p><b>Pays :</b> {transaction.destination?.countryCode ?? "-"}</p>
+                                <p><b>Téléphone :</b> {transaction.beneficiary?.phone ?? "-"}</p>
                             </div>
                         </div>
 
                         <table className="transaction-table">
                             <tbody>
-                            <tr><td>Montant envoyé</td><td>{transaction.amount} {transaction.currency}</td></tr>
-                            <tr><td>Frais</td><td>{transaction.rate} {transaction.currency}</td></tr>
-                            <tr><td><b>Montant total</b></td><td><b>{transaction.amount_total} {transaction.currency}</b></td></tr>
-                            <tr><td>Statut</td><td>{transaction.status}</td></tr>
+                            <tr><td>Montant envoyé</td><td>{formatMoney(transaction.sourceAmount)}</td></tr>
+                            <tr><td>Frais</td><td>{formatMoney(transaction.fee)}</td></tr>
+                            <tr><td><b>Total débité</b></td><td><b>{formatMoney(transaction.totalDebit)}</b></td></tr>
+                            <tr><td>Reçu par le bénéficiaire</td><td>{formatMoney(transaction.destinationAmount)}</td></tr>
+                            <tr><td>Statut</td><td>{TRANSFER_STATUS_LABELS[transaction.status]?.label ?? transaction.status}</td></tr>
                             </tbody>
                         </table>
 

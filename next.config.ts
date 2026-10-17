@@ -21,7 +21,7 @@ const nextConfig : NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "wetransfercashapi.agensic.com",
+        hostname: process.env.IMAGE_HOST || "localhost", // hôte du stockage d'images (liens signés), à renseigner en production
         pathname: "/**",
       },
     ],

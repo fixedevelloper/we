@@ -13,7 +13,7 @@ import IconifyIcon from "../../../../../components/wrappers/IconifyIcon";
 import React from "react";
 
 const Login = () => {
-  const { loading, login, control } = useSignIn()
+  const { loading, login, control, mfaRequired, restart } = useSignIn()
   //console.log(loading)
   return (
     <div className="auth-bg d-flex min-vh-100 justify-content-center align-items-center">
@@ -24,47 +24,61 @@ const Login = () => {
               <Image src={logoDark} alt="dark logo" height={26} className="logo-dark" />
               <Image src={logo} alt="logo light" height={26} className="logo-light" />
             </Link>
-            <h4 className="fw-semibold mb-2 fs-18">Log in to your account</h4>
-            <p className="text-muted mb-4">Enter your email address and password to access admin panel.</p>
+            <h4 className="fw-semibold mb-2 fs-18">Connexion au back-office</h4>
+            <p className="text-muted mb-4">
+              {mfaRequired
+                ? "Saisissez le code à 6 chiffres affiché par votre application d'authentification."
+                : 'Saisissez votre adresse e-mail et votre mot de passe.'}
+            </p>
             <form onSubmit={login} action="/" className="text-start mb-3">
-              <div className="mb-3">
+              <div className="mb-3" hidden={mfaRequired}>
                 <TextFormInput
                   control={control}
                   name="email"
-                  placeholder="Enter your email"
+                  placeholder="Votre adresse e-mail"
                   className="bg-light bg-opacity-50 border-light py-2"
-                  label="Email"
+                  label="E-mail"
                 />
               </div>
-              <div className="mb-3">
+              <div className="mb-3" hidden={mfaRequired}>
                 <TextFormInput
                   control={control}
                   name="password"
-                  placeholder="Enter your password"
+                  type="password"
+                  placeholder="Votre mot de passe"
                   className="bg-light bg-opacity-50 border-light py-2"
-                  label="Password"
+                  label="Mot de passe"
                 />
               </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div className="form-check">
-                  <input type="checkbox" className="form-check-input" id="checkbox-signin" />
-                  <label className="form-check-label" htmlFor="checkbox-signin">
-                    Remember me
-                  </label>
+              {mfaRequired && (
+                <div className="mb-3">
+                  <TextFormInput
+                    control={control}
+                    name="code"
+                    placeholder="123456"
+                    className="bg-light bg-opacity-50 border-light py-2"
+                    label="Code de vérification"
+                  />
+                  <button type="button" className="btn btn-link p-0 mt-2" onClick={restart}>
+                    Recommencer
+                  </button>
                 </div>
+              )}
+              <div className="d-flex justify-content-between mb-3">
+                <span />
                 <Link href="/auth/recover-password" className="text-muted border-bottom border-dashed">
-                  Forget Password ?
+                  Mot de passe oublié ?
                 </Link>
               </div>
               <div className="d-grid">
                 <button disabled={loading} className="btn btn-primary fw-semibold" type="submit">
                   {loading ? (
                       <>
-                        <Spinner size="sm" color="light" className="me-2" /> Login...
+                        <Spinner size="sm" color="light" className="me-2" /> Connexion...
                       </>
                   ) : (
                       <>
-                        <IconifyIcon icon="ri:edit-2-line" className="me-1" /> Login
+                        <IconifyIcon icon="ri:edit-2-line" className="me-1" /> {mfaRequired ? 'Valider' : 'Se connecter'}
                       </>
                   )}
                 </button>
