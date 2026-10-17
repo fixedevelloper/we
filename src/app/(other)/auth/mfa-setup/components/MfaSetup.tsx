@@ -4,9 +4,20 @@ import { Button, Card, Col, Row } from 'react-bootstrap'
 import { signOut, useSession } from 'next-auth/react'
 import QRCode from 'qrcode'
 import API_ENDPOINTS from '@/app/(other)/api/Constant'
-import { ApiError, apiFetch } from '@/lib/api/http'
+import { API_ORIGIN, ApiError, apiFetch } from '@/lib/api/http'
 
 type Enrollment = { secret: string; otpauthUri: string }
+
+/**
+ * Cet écran appelle l'API depuis le navigateur : si elle est injoignable (mauvais NEXT_PUBLIC_API_URL) ou refuse l'origine
+ * du back-office (CORS_ALLOWED_ORIGINS), `fetch` échoue sans message exploitable.
+ */
+const describe = (e: unknown): string =>
+  e instanceof ApiError
+    ? e.message
+    : e instanceof TypeError
+      ? `Impossible de joindre l'API (${API_ORIGIN}). Vérifiez NEXT_PUBLIC_API_URL côté back-office et que l'origine ${window.location.origin} figure dans CORS_ALLOWED_ORIGINS côté API.`
+      : 'Erreur inattendue'
 
 /**
  * Activation de la double authentification, obligatoire pour le personnel. Le compte n'a, avant cela, qu'un jeton limité à
@@ -28,7 +39,7 @@ const MfaSetup = () => {
         setEnrollment(e)
         setQr(await QRCode.toDataURL(e.otpauthUri, { width: 220, margin: 1 }))
       })
-      .catch((e: ApiError) => setError(e.message))
+      .catch((e) => setError(describe(e)))
   }, [session?.accessToken, enrollment])
 
   const confirm = async () => {
@@ -39,7 +50,7 @@ const MfaSetup = () => {
       await apiFetch('/me/mfa/confirmation', { method: 'POST', token: session.accessToken, body: { code } })
       setDone(true)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Erreur inattendue')
+      setError(describe(e))
     } finally {
       setBusy(false)
     }
