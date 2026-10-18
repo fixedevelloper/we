@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react'
 import useModal from '../../../../hooks/useModal'
 import Paginator from '@/components/Paginator'
 import TransactionPdfModal from '../TransactionPdf'
-import { formatDateTime, formatMoney, TRANSFER_STATUS_LABELS } from '@/lib/api/format'
+import { formatDateTime, formatMoney, TRANSFER_KIND_LABELS, TRANSFER_STATUS_LABELS } from '@/lib/api/format'
 import type { Page, TransferSummary } from '@/lib/api/types'
 
 const TransactionsCard: React.FC = () => {
@@ -40,6 +40,12 @@ const TransactionsCard: React.FC = () => {
         <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
           <div className="flex-grow-1">
             <h4 className="header-title">Transferts</h4>
+            {data && (
+              <p className="text-muted mb-0 small">
+                {data.totalElements.toLocaleString('fr-FR')} transfert{data.totalElements > 1 ? 's' : ''}
+                {(debouncedSearch || from || to || status) && ' correspondant aux filtres'}
+              </p>
+            )}
           </div>
           <div className="d-flex flex-wrap flex-lg-nowrap gap-2">
             <div className="position-relative">
@@ -72,10 +78,12 @@ const TransactionsCard: React.FC = () => {
                 <tr>
                   <th>Référence</th>
                   <th>Date</th>
+                  <th>Type</th>
                   <th>Client</th>
                   <th>Bénéficiaire</th>
                   <th>Montant envoyé</th>
                   <th>Total débité</th>
+                  <th>Reçu</th>
                   <th>Statut</th>
                   <th className="text-center">Action</th>
                 </tr>
@@ -83,7 +91,7 @@ const TransactionsCard: React.FC = () => {
               <tbody>
                 {transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center text-muted">
+                    <td colSpan={10} className="text-center text-muted">
                       Aucun transfert trouvé.
                     </td>
                   </tr>
@@ -92,10 +100,12 @@ const TransactionsCard: React.FC = () => {
                     <tr key={t.id}>
                       <td>{t.reference}</td>
                       <td>{formatDateTime(t.createdAt)}</td>
+                      <td>{TRANSFER_KIND_LABELS[t.kind] ?? t.kind}</td>
                       <td>{t.customer?.displayName || t.senderName || '-'}</td>
                       <td>{t.beneficiaryName || '-'}</td>
                       <td>{formatMoney(t.sourceAmount)}</td>
                       <td>{formatMoney(t.totalDebit)}</td>
+                      <td>{formatMoney(t.destinationAmount)}</td>
                       <td>
                         <span className={`badge bg-${TRANSFER_STATUS_LABELS[t.status]?.variant ?? 'secondary'}-subtle text-${TRANSFER_STATUS_LABELS[t.status]?.variant ?? 'secondary'}`}>
                           {TRANSFER_STATUS_LABELS[t.status]?.label ?? t.status}

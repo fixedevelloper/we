@@ -8,6 +8,7 @@ import { useNotificationContext } from '@/context/useNotificationContext'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import Spinner from '@/components/Spinner'
 import { ApiError } from '@/lib/api/http'
+import { ID_TYPE_LABELS } from '@/lib/api/format'
 import type { Country, Destination, Party } from '@/lib/api/types'
 
 type AdminParty = Party & { customer?: { id?: string; displayName?: string }; destinations?: Destination[] }
@@ -162,7 +163,15 @@ const PartyEditCard: React.FC<{ partyId: string }> = ({ partyId }) => {
               {business ? field("Type d'entreprise", 'businessType') : field('Nom', 'lastName')}
               {field('E-mail', 'email', 'email')}
               {business ? field("Date de création", 'businessRegisteredOn', 'date') : field('Date de naissance', 'birthDate', 'date')}
-              {field('Nationalité', 'nationality')}
+              <Form.Group className="mb-3">
+                <Form.Label>Nationalité</Form.Label>
+                <Form.Select value={form.nationality} onChange={set('nationality')}>
+                  <option value="">—</option>
+                  {(countries.data ?? []).map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
               {field('Profession', 'occupation')}
               {field('Civilité', 'civility')}
             </Col>
@@ -174,7 +183,17 @@ const PartyEditCard: React.FC<{ partyId: string }> = ({ partyId }) => {
         <Card.Header className="bg-light fw-bold small py-2">Pièce d'identité</Card.Header>
         <Card.Body>
           <Row>
-            <Col md={4}>{field('Type de pièce', 'idDocumentType')}</Col>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Type de pièce</Form.Label>
+                <Form.Select value={form.idDocumentType} onChange={set('idDocumentType')}>
+                  <option value="">—</option>
+                  {[...new Set([...(form.idDocumentType ? [form.idDocumentType] : []), 'PP', 'CNI'])].map((t) => (
+                    <option key={t} value={t}>{ID_TYPE_LABELS[t] ?? t}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Numéro {data?.idDocument?.numberMasked ? `(actuel : ${data.idDocument.numberMasked})` : ''}</Form.Label>
@@ -203,7 +222,7 @@ const PartyEditCard: React.FC<{ partyId: string }> = ({ partyId }) => {
                   <td>{d.kind === 'BANK_ACCOUNT' ? 'Compte bancaire' : 'Mobile money'}</td>
                   <td>{d.bank?.name ?? d.mobileOperator?.name ?? '-'}</td>
                   <td>{d.accountNumberMasked}</td>
-                  <td>{d.countryCode}</td>
+                  <td>{countries.data?.find((c) => c.code === d.countryCode)?.name ?? d.countryCode}</td>
                 </tr>
               ))}
             </tbody>

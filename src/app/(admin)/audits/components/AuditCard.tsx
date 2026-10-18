@@ -7,7 +7,7 @@ import API_ENDPOINTS from '../../../(other)/api/Constant'
 import useModal from '@/hooks/useModal'
 import Paginator from '@/components/Paginator'
 import AuditPdfModal from '../AuditPdf'
-import { formatDateTime } from '@/lib/api/format'
+import { AUDIT_ACTION_LABELS, AUDIT_ACTOR_TYPE_LABELS, AUDIT_ENTITY_LABELS, formatDateTime } from '@/lib/api/format'
 import type { Page } from '@/lib/api/types'
 
 type Entry = {
@@ -30,7 +30,7 @@ const AuditCard: React.FC = () => {
   const [entityType, setEntityType] = useState('')
   const [entityId, setEntityId] = useState('')
   const { isOpen, className, toggleModal } = useModal()
-  const { data, loading, error } = useFetchData<Page<Entry>>(API_ENDPOINTS.AUDIT_LOGS, { page, size: 20, sort: 'occurredAt,desc', from, to, actor, entityType, entityId })
+  const { data, loading, error } = useFetchData<Page<Entry>>(API_ENDPOINTS.AUDIT_LOGS, { page, size: 20, sort: 'occurredAt,desc', from: from ? new Date(`${from}T00:00:00`).toISOString() : '', to: to ? new Date(`${to}T23:59:59.999`).toISOString() : '', actor, entityType, entityId })
   const audits = data?.content ?? []
 
   return (
@@ -39,6 +39,7 @@ const AuditCard: React.FC = () => {
       <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
         <div className="flex-grow-1">
           <h4 className="header-title">Journal d'audit</h4>
+          {data && <small className="text-muted">{data.totalElements} entrée{data.totalElements > 1 ? 's' : ''}</small>}
         </div>
         <Button variant="soft-primary" onClick={toggleModal}>
           <IconifyIcon icon="ri:filter-line" className="me-1" />
@@ -70,9 +71,9 @@ const AuditCard: React.FC = () => {
               {audits.map((e) => (
                 <tr key={e.id}>
                     <td className="text-nowrap">{formatDateTime(e.occurredAt)}</td>
-                    <td>{e.actor ?? e.actorType}</td>
-                    <td>{e.action}</td>
-                    <td>{e.entityType} {e.entityId}</td>
+                    <td>{e.actor ?? AUDIT_ACTOR_TYPE_LABELS[e.actorType] ?? e.actorType}</td>
+                    <td>{AUDIT_ACTION_LABELS[e.action] ?? e.action}</td>
+                    <td>{AUDIT_ENTITY_LABELS[e.entityType] ?? e.entityType} <small className="text-muted">{e.entityId}</small></td>
                     <td>{e.ipAddress || '-'}</td>
                 </tr>
               ))}
@@ -92,23 +93,26 @@ const AuditCard: React.FC = () => {
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Du</label>
-              <Form.Control type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <Form.Control type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} />
             </div>
             <div className="col-md-6">
               <label className="form-label">Au</label>
-              <Form.Control type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <Form.Control type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0) }} />
             </div>
             <div className="col-12">
               <label className="form-label">Auteur (e-mail)</label>
-              <Form.Control value={actor} onChange={(e) => setActor(e.target.value)} />
+              <Form.Control value={actor} onChange={(e) => { setActor(e.target.value); setPage(0) }} />
             </div>
             <div className="col-md-6">
               <label className="form-label">Type d'objet</label>
-              <Form.Control value={entityType} onChange={(e) => setEntityType(e.target.value)} placeholder="TRANSFER, CUSTOMER..." />
+              <Form.Select value={entityType} onChange={(e) => { setEntityType(e.target.value); setPage(0) }}>
+                <option value="">Tous</option>
+                {Object.entries(AUDIT_ENTITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </Form.Select>
             </div>
             <div className="col-md-6">
               <label className="form-label">Identifiant de l'objet</label>
-              <Form.Control value={entityId} onChange={(e) => setEntityId(e.target.value)} />
+              <Form.Control value={entityId} onChange={(e) => { setEntityId(e.target.value); setPage(0) }} />
             </div>
           </div>
         </ModalBody>
@@ -117,7 +121,7 @@ const AuditCard: React.FC = () => {
         </ModalFooter>
       </Modal>
       <AuditPdfModal
-        audits={audits.map((e) => ({ id: e.id, date: formatDateTime(e.occurredAt), name: e.actor ?? e.actorType, action: e.action, message: `${e.entityType} ${e.entityId}`, ip_address: e.ipAddress ?? '' })) as any}
+        audits={audits.map((e) => ({ id: e.id, date: formatDateTime(e.occurredAt), name: e.actor ?? AUDIT_ACTOR_TYPE_LABELS[e.actorType] ?? e.actorType, action: AUDIT_ACTION_LABELS[e.action] ?? e.action, message: `${AUDIT_ENTITY_LABELS[e.entityType] ?? e.entityType} ${e.entityId}`, ip_address: e.ipAddress ?? '' })) as any}
         show={showPdf}
         onClose={() => setShowPdf(false)}
         begin_date={from}

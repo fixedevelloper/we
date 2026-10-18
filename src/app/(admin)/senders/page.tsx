@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Expéditeurs' }
 const Page = () => {
   return (
     <>
-      <PageTitle title="Expéditeurs" subTitle="Liste" />
+      <PageTitle title="Expéditeurs" subTitle="Expéditeurs de tous les clients" />
       <Row>
         <Col xs={12}>
           <PartyListCard role="SENDER" />

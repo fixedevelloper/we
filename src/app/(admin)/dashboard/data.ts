@@ -1,309 +1,62 @@
 import { ApexOptions } from 'apexcharts'
+import type { DashboardMonth } from '@/lib/api/types'
 
-export const salesChart: ApexOptions = {
-  series: [
-    {
-      name: 'Revenue',
-      data: [50, 85, 60, 100, 70, 45, 90, 75],
-    },
-  ],
-  chart: {
-    height: 45,
-    type: 'area',
-    sparkline: {
-      enabled: true,
-    },
-    animations: {
-      enabled: false,
-    },
-  },
-  // colors: ["#348cd4"],
-  colors: ['#5ecca7'],
-
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.5,
-      opacityTo: 0.1,
-      stops: [0, 90, 100],
-    },
-  },
-  tooltip: {
-    enabled: false,
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  grid: {
-    show: false,
-  },
-  xaxis: {
-    labels: {
-      show: false,
-    },
-    axisBorder: {
-      show: false,
-    },
-    axisTicks: {
-      show: false,
-    },
-  },
-  yaxis: {
-    show: false,
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 1,
-  },
+/** « 2026-10 » → « oct. 26 ». */
+export const monthLabel = (month: string): string => {
+  const [y, m] = month.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit', timeZone: 'UTC' })
 }
 
-export const productChart: ApexOptions = {
-  series: [
-    {
-      name: 'Transferts',
-      data: [30, 60, 35, 80, 50, 25, 70, 55],
-    },
-  ],
-  chart: {
-    height: 45,
-    type: 'area',
-    sparkline: {
-      enabled: true,
-    },
-    animations: {
-      enabled: false,
-    },
-  },
-  // colors:,
-  colors: ['#348cd4'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.5,
-      opacityTo: 0.1,
-      stops: [0, 90, 100],
-    },
-  },
-  tooltip: {
-    enabled: false,
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  grid: {
-    show: false,
-  },
-  xaxis: {
-    labels: {
-      show: false,
-    },
-    axisBorder: {
-      show: false,
-    },
-    axisTicks: {
-      show: false,
-    },
-  },
-  yaxis: {
-    show: false,
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 1,
-  },
-}
+export const amountOf = (value: string): number => Number(value) || 0
 
-export const customerschart: ApexOptions = {
-  series: [
-    {
-      name: 'Recharges',
-      data: [20, 40, 25, 50, 35, 15, 45, 30],
-    },
-  ],
-  chart: {
-    height: 45,
-    type: 'area',
-    sparkline: {
-      enabled: true,
-    },
-    animations: {
-      enabled: false,
-    },
-  },
-  // colors: ["#348cd4"],
-  colors: ['#f36977'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.5,
-      opacityTo: 0.1,
-      stops: [0, 90, 100],
-    },
-  },
-  tooltip: {
-    enabled: false,
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  grid: {
-    show: false,
-  },
-  xaxis: {
-    labels: {
-      show: false,
-    },
-    axisBorder: {
-      show: false,
-    },
-    axisTicks: {
-      show: false,
-    },
-  },
-  yaxis: {
-    show: false,
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 1,
-  },
-}
+export type MonthField = 'transferVolume' | 'fees' | 'topUpVolume'
 
-export const porfitChart: ApexOptions = {
-  series: [
-    {
-      name: 'Savings',
-      data: [40, 70, 50, 90, 60, 35, 80, 65],
-    },
-  ],
-  chart: {
-    height: 45,
-    type: 'area',
-    sparkline: {
-      enabled: true,
-    },
-    animations: {
-      enabled: false,
-    },
-  },
-  // colors: ["#348cd4"],
-  colors: ['#f9c222'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.5,
-      opacityTo: 0.1,
-      stops: [0, 90, 100],
-    },
-  },
-  tooltip: {
-    enabled: false,
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  grid: {
-    show: false,
-  },
-  xaxis: {
-    labels: {
-      show: false,
-    },
-    axisBorder: {
-      show: false,
-    },
-    axisTicks: {
-      show: false,
-    },
-  },
-  yaxis: {
-    show: false,
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 1,
-  },
-}
+/** Série numérique d'un indicateur mensuel, du plus ancien au plus récent. */
+export const seriesOf = (months: DashboardMonth[], field: MonthField | 'newCustomers' | 'transferCount'): number[] =>
+  months.map((m) => (typeof m[field] === 'number' ? (m[field] as number) : amountOf(m[field] as string)))
 
-export const statisChart: ApexOptions = {
-  series: [
-    {
-      name: 'Open Campaign',
-      type: 'bar',
-      data: [89.25, 98.58, 68.74, 108.87, 77.54, 84.03, 51.24, 28.57, 92.57, 42.36, 88.51, 36.57],
-    },
-  ],
-  chart: {
-    height: 310,
-    type: 'line',
-    toolbar: {
-      show: false,
-    },
-  },
-  stroke: {
-    width: 0,
-    curve: 'straight',
-  },
-  plotOptions: {
-    bar: {
-      columnWidth: '60%',
-      barHeight: '70%',
-      borderRadius: 5,
-      borderRadiusApplication: 'end',
-    },
-  },
-  xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] },
-  colors: ['#0acf97', '#45bbe0'],
-}
+/** Mini-courbe d'une carte de chiffre clé. */
+export const sparkline = (name: string, color: string, data: number[]): ApexOptions => ({
+  series: [{ name, data }],
+  chart: { height: 45, type: 'area', sparkline: { enabled: true }, animations: { enabled: false } },
+  colors: [color],
+  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.5, opacityTo: 0.1, stops: [0, 90, 100] } },
+  tooltip: { enabled: false },
+  dataLabels: { enabled: false },
+  grid: { show: false },
+  xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+  yaxis: { show: false },
+  stroke: { curve: 'smooth', width: 1 },
+})
 
-export const revenueChart: ApexOptions = {
-  series: [
-    {
-      name: 'Transferts',
-      data: [45, 60, -20, 60, 0, 45, -80, 65, -30, 58], // Example data
-    },
-    {
-      name: 'Recharges',
-      data: [-80, 60, 80, -40, 15, 60, -40, 80, -50, 2], // Example data
-    },
-  ],
-  // chart: {
-  //     height: 350,
-  //     type: "line",
-  // },
+const compact = (v: number) => v.toLocaleString('fr-FR', { notation: 'compact', maximumFractionDigits: 1 })
 
-  chart: {
-    height: 300,
-    type: 'line',
-    zoom: {
-      enabled: false,
-    },
-    toolbar: { show: false },
-  },
-  stroke: {
-    width: [4, 4],
-    curve: 'smooth',
-    dashArray: [0, 8], // Solid for first line, dashed for second
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  markers: {
-    size: 5,
-  },
+/** Volumes de transferts et de recharges sur 12 mois. */
+export const activityChart = (months: DashboardMonth[], currency: string): ApexOptions => ({
+  series: [
+    { name: 'Transferts', data: seriesOf(months, 'transferVolume') },
+    { name: 'Recharges', data: seriesOf(months, 'topUpVolume') },
+  ],
+  chart: { height: 300, type: 'line', zoom: { enabled: false }, toolbar: { show: false } },
+  stroke: { width: [4, 4], curve: 'smooth', dashArray: [0, 8] },
+  dataLabels: { enabled: false },
+  markers: { size: 4 },
   colors: ['#02c0ce', '#777edd'],
-  legend: {
-    position: 'top',
-  },
-  xaxis: {
-    categories: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
-  },
-  tooltip: {
-    shared: true,
-    intersect: false,
-  },
-}
+  legend: { position: 'top' },
+  xaxis: { categories: months.map((m) => monthLabel(m.month)) },
+  yaxis: { labels: { formatter: (v: number) => compact(v) } },
+  tooltip: { shared: true, intersect: false, y: { formatter: (v: number) => `${v.toLocaleString('fr-FR')} ${currency}` } },
+})
+
+/** Frais perçus par mois. */
+export const feesChart = (months: DashboardMonth[], currency: string): ApexOptions => ({
+  series: [{ name: 'Frais perçus', type: 'bar', data: seriesOf(months, 'fees') }],
+  chart: { height: 310, type: 'line', toolbar: { show: false } },
+  stroke: { width: 0, curve: 'straight' },
+  plotOptions: { bar: { columnWidth: '60%', borderRadius: 5, borderRadiusApplication: 'end' } },
+  dataLabels: { enabled: false },
+  xaxis: { categories: months.map((m) => monthLabel(m.month)) },
+  yaxis: { labels: { formatter: (v: number) => compact(v) } },
+  tooltip: { y: { formatter: (v: number) => `${v.toLocaleString('fr-FR')} ${currency}` } },
+  colors: ['#0acf97'],
+})

@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { Badge, Button, Card, Col, Form, ListGroup, Row, Table } from 'react-bootstrap'
 import API_ENDPOINTS from '@/app/(other)/api/Constant'
 import { useFetchData } from '@/hooks/useFetchData'
@@ -8,8 +9,22 @@ import { useNotificationContext } from '@/context/useNotificationContext'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import Spinner from '@/components/Spinner'
 import { ApiError, newIdempotencyKey } from '@/lib/api/http'
-import { formatDate, formatDateTime, formatMoney, KYC_STATUS_LABELS } from '@/lib/api/format'
-import type { Money } from '@/lib/api/types'
+import {
+  CUSTOMER_STATUS_LABELS,
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  KYC_DOCUMENT_STATUS_LABELS,
+  KYC_STATUS_LABELS,
+  TOPUP_METHOD_LABELS,
+  TOPUP_STATUS_LABELS,
+  TRANSFER_STATUS_LABELS,
+  WALLET_STATUS_LABELS,
+} from '@/lib/api/format'
+import { useCountryNames } from '@/hooks/useCountryNames'
+import type { Money, Page, TransferSummary } from '@/lib/api/types'
+
+type TopUpRow = { id: string; reference: string; method: string; amount: Money; status: string; createdAt: string }
 
 type AdminCustomer = {
   id: string
@@ -63,6 +78,10 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
   const customer = useFetchData<AdminCustomer>(`${API_ENDPOINTS.CUSTOMERS}/${customerId}`)
   const wallets = useFetchData<Wallet[]>(`${API_ENDPOINTS.CUSTOMERS}/${customerId}/wallets`)
   const kyc = useFetchData<{ status: string; documents: KycDocument[] }>(`${API_ENDPOINTS.CUSTOMERS}/${customerId}/kyc`)
+  const recent = { customerId, page: 0, size: 5, sort: 'createdAt,desc' }
+  const transfers = useFetchData<Page<TransferSummary>>(API_ENDPOINTS.TRANSFERS, recent)
+  const topUps = useFetchData<Page<TopUpRow>>(API_ENDPOINTS.TOP_UPS, recent)
+  const countryName = useCountryNames()
   const [busy, setBusy] = useState(false)
   const [adjustment, setAdjustment] = useState({ direction: 'CREDIT', amount: '', currency: '', reason: '' })
 
@@ -136,10 +155,12 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
             ? wallets.loading ? '…' : '0'
             : (wallets.data ?? []).map((w) => formatMoney({ amount: w.balance, currency: w.currency })).join(' · ')}
         </h4>
-        <p className="text-muted small mb-2">Solde{c.transferCount != null ? ` · ${c.transferCount} transfert(s)` : ''}</p>
+        <p className="text-muted small mb-2">
+          Solde{transfers.data ? ` · ${transfers.data.totalElements} transfert${transfers.data.totalElements > 1 ? 's' : ''}` : ''}
+        </p>
         <div className="d-flex gap-2 justify-content-center">
-          <Badge bg={c.status === 'ACTIVE' ? 'success' : 'danger'} className="px-3 py-2 rounded-pill">
-            {c.status}
+          <Badge bg={CUSTOMER_STATUS_LABELS[c.status]?.variant ?? 'secondary'} className="px-3 py-2 rounded-pill">
+            Compte : {CUSTOMER_STATUS_LABELS[c.status]?.label ?? c.status}
           </Badge>
           <Badge bg={kycState?.variant ?? 'secondary'} className="px-3 py-2 rounded-pill">
             Identité : {kycState?.label ?? c.kycStatus}
@@ -160,9 +181,9 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
               <ListGroup variant="flush" className="small">
                 <ListGroup.Item><strong>E-mail :</strong> {c.email || '—'}</ListGroup.Item>
                 <ListGroup.Item><strong>Téléphone :</strong> {c.phone || '—'}</ListGroup.Item>
-                <ListGroup.Item><strong>Pays :</strong> {c.countryCode || '—'} {c.city ? `· ${c.city}` : ''}</ListGroup.Item>
+                <ListGroup.Item><strong>Pays :</strong> {c.countryCode ? countryName(c.countryCode) : '—'} {c.city ? `· ${c.city}` : ''}</ListGroup.Item>
                 <ListGroup.Item><strong>Adresse :</strong> {c.addressLine || '—'}</ListGroup.Item>
-                <ListGroup.Item><strong>Naissance :</strong> {formatDate(c.birthDate)} · {c.nationality || '—'}</ListGroup.Item>
+                <ListGroup.Item><strong>Naissance :</strong> {[c.birthDate ? formatDate(c.birthDate) : null, c.nationality ? countryName(c.nationality) : null].filter(Boolean).join(' · ') || '—'}</ListGroup.Item>
                 <ListGroup.Item><strong>Inscrit le :</strong> {formatDateTime(c.createdAt)}</ListGroup.Item>
               </ListGroup>
             </Col>
@@ -181,7 +202,7 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
               <tr key={w.id}>
                 <td>{w.currency}</td>
                 <td>{formatMoney({ amount: w.balance, currency: w.currency })}</td>
-                <td>{w.status}</td>
+                <td>{WALLET_STATUS_LABELS[w.status] ?? w.status}</td>
               </tr>
             ))}
           </tbody>
@@ -205,7 +226,7 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
                     <div className="text-muted">Déposé le {formatDateTime(d.uploadedAt)} · expire le {formatDate(d.expiresOn)}</div>
                     {d.rejectionReason && <div className="text-danger">Refusé : {d.rejectionReason}</div>}
                   </td>
-                  <td><Badge bg={d.status === 'APPROVED' ? 'success' : d.status === 'PENDING' ? 'warning' : 'danger'}>{d.status}</Badge></td>
+                  <td><Badge bg={KYC_DOCUMENT_STATUS_LABELS[d.status]?.variant ?? 'secondary'}>{KYC_DOCUMENT_STATUS_LABELS[d.status]?.label ?? d.status}</Badge></td>
                   <td className="text-end text-nowrap">
                     {d.downloadUrl && (
                       <a href={d.downloadUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-secondary me-1">
@@ -224,6 +245,52 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
             </tbody>
           </Table>
         )}
+      </Card>
+
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Header className="bg-light fw-bold small py-2 d-flex justify-content-between">
+          <span>Derniers transferts</span>
+          {transfers.data && transfers.data.totalElements > 0 && <span className="text-muted fw-normal">{transfers.data.totalElements} au total</span>}
+        </Card.Header>
+        <Table className="mb-0 small">
+          <tbody>
+            {(transfers.data?.content ?? []).length === 0 && (
+              <tr><td className="text-center text-muted py-3">{transfers.loading ? 'Chargement...' : 'Aucun transfert'}</td></tr>
+            )}
+            {(transfers.data?.content ?? []).map((t) => (
+              <tr key={t.id}>
+                <td><Link href={`/transactions/${t.id}`}>{t.reference}</Link></td>
+                <td>{formatDateTime(t.createdAt)}</td>
+                <td>{t.beneficiaryName || '-'}</td>
+                <td>{formatMoney(t.sourceAmount)}</td>
+                <td><Badge bg={TRANSFER_STATUS_LABELS[t.status]?.variant ?? 'secondary'}>{TRANSFER_STATUS_LABELS[t.status]?.label ?? t.status}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
+
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Header className="bg-light fw-bold small py-2 d-flex justify-content-between">
+          <span>Dernières recharges</span>
+          {topUps.data && topUps.data.totalElements > 0 && <span className="text-muted fw-normal">{topUps.data.totalElements} au total</span>}
+        </Card.Header>
+        <Table className="mb-0 small">
+          <tbody>
+            {(topUps.data?.content ?? []).length === 0 && (
+              <tr><td className="text-center text-muted py-3">{topUps.loading ? 'Chargement...' : 'Aucune recharge'}</td></tr>
+            )}
+            {(topUps.data?.content ?? []).map((t) => (
+              <tr key={t.id}>
+                <td>{t.reference}</td>
+                <td>{formatDateTime(t.createdAt)}</td>
+                <td>{TOPUP_METHOD_LABELS[t.method] ?? t.method}</td>
+                <td>{formatMoney(t.amount)}</td>
+                <td><Badge bg={TOPUP_STATUS_LABELS[t.status]?.variant ?? 'secondary'}>{TOPUP_STATUS_LABELS[t.status]?.label ?? t.status}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
       </Card>
 
       <Card className="border-0 shadow-sm mb-4">
@@ -258,6 +325,12 @@ const DetailCustomerCard: React.FC<{ customerId: string }> = ({ customerId }) =>
         <Button variant="outline-primary" className="me-2" onClick={() => window.print()}>
           <IconifyIcon icon="ri:printer-line" className="me-1" />
           Imprimer la fiche
+        </Button>
+        <Button as={Link as any} href={`/customers/senders/${c.id}`} variant="outline-primary" className="me-2">
+          Expéditeurs
+        </Button>
+        <Button as={Link as any} href={`/customers/beneficiaries/${c.id}`} variant="outline-primary" className="me-2">
+          Bénéficiaires
         </Button>
         <Button href={`/customers/${c.id}/edit`} variant="primary">
           <IconifyIcon icon="ri:edit-2-line" className="me-1" />

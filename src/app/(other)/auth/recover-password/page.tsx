@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Card, Col, Row } from 'react-bootstrap'
 import RecoverPass from './components/RecoverPass'
 
-export const metadata: Metadata = { title: 'Reset Password' }
+export const metadata: Metadata = { title: 'Mot de passe oublié' }
 
 const RecoverPasswordPage = () => {
   return (
@@ -19,13 +19,12 @@ const RecoverPasswordPage = () => {
               <Image src={logoDark} alt="dark logo" height={26} className="logo-dark" />
               <Image src={logo} alt="logo light" height={26} className="logo-light" />
             </Link>
-            <h4 className="fw-semibold mb-2 fs-18">Reset Your Password</h4>
-            <p className="text-muted mb-4">Please enter your email address to request a password reset.</p>
+            <h4 className="fw-semibold mb-2 fs-18">Mot de passe oublié</h4>
+            <p className="text-muted mb-4">Saisissez l'adresse e-mail de votre compte : si elle existe, vous recevrez un lien pour choisir un nouveau mot de passe.</p>
             <RecoverPass />
             <p className="text-muted fs-14 mb-0">
-              Back To
-              <Link href="/auth/login" className="fw-semibold text-danger ms-1">
-                Login !
+              <Link href="/auth/login" className="fw-semibold text-danger">
+                Retour à la connexion
               </Link>
             </p>
           </Card>

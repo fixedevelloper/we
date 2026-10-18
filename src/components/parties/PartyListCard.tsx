@@ -2,12 +2,13 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import React, { useEffect, useState } from 'react'
 import debounce from 'lodash.debounce'
-import { Card, CardFooter, CardHeader, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Table } from 'react-bootstrap'
+import { Badge, Card, CardFooter, CardHeader, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Table } from 'react-bootstrap'
 import Link from 'next/link'
+import { useCountryNames } from '@/hooks/useCountryNames'
 import { useFetchData } from '@/hooks/useFetchData'
 import API_ENDPOINTS from '@/app/(other)/api/Constant'
 import Paginator from '@/components/Paginator'
-import { formatDate, partyName } from '@/lib/api/format'
+import { formatDate, ID_TYPE_LABELS, partyName } from '@/lib/api/format'
 import type { Page, Party } from '@/lib/api/types'
 
 type AdminParty = Party & { customer?: { id?: string; displayName?: string } }
@@ -19,6 +20,7 @@ const PAGE_SIZE = 10
  * Les numéros de pièce sont toujours masqués par l'API.
  */
 const PartyListCard: React.FC<{ role: 'SENDER' | 'BENEFICIARY'; customerId?: string }> = ({ role, customerId }) => {
+  const countryName = useCountryNames()
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -40,6 +42,7 @@ const PartyListCard: React.FC<{ role: 'SENDER' | 'BENEFICIARY'; customerId?: str
       <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
         <div className="flex-grow-1">
           <h4 className="header-title">{role === 'SENDER' ? 'Expéditeurs' : 'Bénéficiaires'}</h4>
+          {data && <small className="text-muted">{data.totalElements} {role === 'SENDER' ? `expéditeur${data.totalElements > 1 ? 's' : ''}` : `bénéficiaire${data.totalElements > 1 ? 's' : ''}`}</small>}
         </div>
         <div className="position-relative">
           <input
@@ -59,7 +62,7 @@ const PartyListCard: React.FC<{ role: 'SENDER' | 'BENEFICIARY'; customerId?: str
         ) : error ? (
           <p className="text-danger p-3">❌ {error.message}</p>
         ) : parties.length === 0 ? (
-          <p className="text-center p-3 text-muted">Aucun résultat</p>
+          <p className="text-center p-3 text-muted">{debouncedSearch ? 'Aucun résultat' : `Aucun ${role === 'SENDER' ? 'expéditeur' : 'bénéficiaire'} enregistré`}</p>
         ) : (
           <Table className="table-hover text-nowrap mb-0">
             <thead className="bg-light-subtle">
@@ -80,11 +83,14 @@ const PartyListCard: React.FC<{ role: 'SENDER' | 'BENEFICIARY'; customerId?: str
                   <td>{partyName(p)}</td>
                   <td>{p.kind === 'BUSINESS' ? 'Entreprise' : 'Particulier'}</td>
                   <td>{p.phone || '-'}</td>
-                  <td>{p.countryCode || '-'}</td>
+                  <td>{countryName(p.countryCode)}</td>
                   <td>
-                    {p.idDocument?.type || '-'} {p.idDocument?.numberMasked ?? ''}
+                    {p.idDocument?.type ? (ID_TYPE_LABELS[p.idDocument.type] ?? p.idDocument.type) : '-'} {p.idDocument?.numberMasked ?? ''}
                   </td>
-                  <td>{formatDate(p.idDocument?.expiresOn)}</td>
+                  <td>
+                    {formatDate(p.idDocument?.expiresOn)}
+                    {p.idDocument?.expiresOn && p.idDocument.expiresOn < new Date().toISOString().slice(0, 10) && <Badge bg="danger" className="ms-2">Expirée</Badge>}
+                  </td>
                   <td>
                     {p.customer?.id ? (
                       <Link href={`/customers/${p.customer.id}`}>{p.customer.displayName ?? 'Voir'}</Link>

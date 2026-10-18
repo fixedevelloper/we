@@ -14,10 +14,12 @@ const API_ENDPOINTS = {
     MFA_CONFIRMATION: `${API_BASE}/me/mfa/confirmation`,
     // référentiels publics
     COUNTRIES: `${API_BASE}/countries`,
+    ADMIN_COUNTRIES: `${API_BASE}/admin/countries`,
     PURPOSES: `${API_BASE}/reference/transfer-purposes`,
     SOURCES_OF_FUNDS: `${API_BASE}/reference/sources-of-funds`,
     RELATIONSHIPS: `${API_BASE}/reference/relationships`,
     // administration
+    DASHBOARD: `${API_BASE}/admin/dashboard`,
     CUSTOMERS: `${API_BASE}/admin/customers`,
     PARTIES: `${API_BASE}/admin/parties`,
     TRANSFERS: `${API_BASE}/admin/transfers`,
@@ -32,6 +34,8 @@ const API_ENDPOINTS = {
     WEB_TOKENS: `${API_BASE}/admin/web-tokens`,
     SETTINGS: `${API_BASE}/admin/settings`,
     REFERENCE_SYNC: `${API_BASE}/admin/reference/sync`,
+    SYNC_OVERVIEW: `${API_BASE}/admin/reference/sync-overview`,
+    SYNC_JOBS: `${API_BASE}/admin/reference/sync-jobs`,
 };
 
 export default API_ENDPOINTS;

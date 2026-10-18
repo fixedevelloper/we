@@ -5,11 +5,12 @@ import debounce from 'lodash.debounce'
 import { Badge, Button, Card, CardFooter, CardHeader, Col, Form, Row, Table } from 'react-bootstrap'
 import { useFetchData } from '@/hooks/useFetchData'
 import { useApi } from '@/hooks/useApi'
+import { useSession } from 'next-auth/react'
 import { useNotificationContext } from '@/context/useNotificationContext'
 import API_ENDPOINTS from '../../../(other)/api/Constant'
 import Paginator from '@/components/Paginator'
 import { ApiError } from '@/lib/api/http'
-import { formatDateTime } from '@/lib/api/format'
+import { formatDateTime, ROLE_LABELS, STAFF_STATUS_LABELS } from '@/lib/api/format'
 import type { Page, Role } from '@/lib/api/types'
 
 type StaffUser = { id: string; email: string; displayName: string; roles: Role[]; status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED'; mfaEnabled?: boolean; lastLoginAt?: string }
@@ -18,6 +19,8 @@ const STAFF_ROLES: Role[] = ['SUPPORT', 'ADMIN', 'SUPER_ADMIN']
 /** Comptes du personnel (permission USER_MANAGE) : invitation par e-mail, rôles, suspension, réinitialisation de la 2FA. */
 const EmployeeCard: React.FC = () => {
   const api = useApi()
+  const { data: session } = useSession()
+  const myEmail = session?.user?.email?.toLowerCase()
   const { showNotification } = useNotificationContext()
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
@@ -61,6 +64,7 @@ const EmployeeCard: React.FC = () => {
       <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
         <div className="flex-grow-1">
           <h4 className="header-title">Personnel</h4>
+          {data && <small className="text-muted">{data.totalElements} compte{data.totalElements > 1 ? 's' : ''}</small>}
         </div>
         <div className="position-relative">
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="form-control ps-4" placeholder="Rechercher..." />
@@ -74,7 +78,7 @@ const EmployeeCard: React.FC = () => {
             <Col md={3}><Form.Control required placeholder="Nom affiché" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} /></Col>
             <Col md={3}>
               <Form.Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-                {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                {STAFF_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
               </Form.Select>
             </Col>
             <Col md={2}><Button type="submit" className="w-100" disabled={busy}>Inviter</Button></Col>
@@ -100,20 +104,23 @@ const EmployeeCard: React.FC = () => {
               </tr>
             </thead>
             <tbody>
+              {users.length === 0 && (
+                <tr><td colSpan={7} className="text-center text-muted py-4">Aucun compte trouvé</td></tr>
+              )}
               {users.map((u) => (
                 <tr key={u.id}>
-                  <td>{u.displayName}</td>
+                  <td>{u.displayName}{u.email.toLowerCase() === myEmail && <Badge bg="info" className="ms-2">Vous</Badge>}</td>
                   <td>{u.email}</td>
                   <td>
-                    <Form.Select size="sm" value={u.roles[0] ?? ''} disabled={busy} onChange={(e) => run('Rôle modifié', () => api.patch(`${API_ENDPOINTS.USERS}/${u.id}`, { roles: [e.target.value] }))}>
-                      {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    <Form.Select size="sm" value={u.roles[0] ?? ''} disabled={busy || u.email.toLowerCase() === myEmail} onChange={(e) => run('Rôle modifié', () => api.patch(`${API_ENDPOINTS.USERS}/${u.id}`, { roles: [e.target.value] }))}>
+                      {STAFF_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                     </Form.Select>
                   </td>
                   <td>{u.mfaEnabled ? <Badge bg="success">active</Badge> : <Badge bg="warning">à activer</Badge>}</td>
                   <td>{formatDateTime(u.lastLoginAt)}</td>
-                  <td><Badge bg={u.status === 'ACTIVE' ? 'success' : u.status === 'SUSPENDED' ? 'danger' : 'secondary'}>{u.status}</Badge></td>
+                  <td><Badge bg={STAFF_STATUS_LABELS[u.status]?.variant}>{STAFF_STATUS_LABELS[u.status]?.label ?? u.status}</Badge></td>
                   <td className="text-end">
-                    {u.status !== 'PENDING_VERIFICATION' && (
+                    {u.status !== 'PENDING_VERIFICATION' && u.email.toLowerCase() !== myEmail && (
                       <Button size="sm" variant="outline-secondary" className="me-1" disabled={busy} onClick={() => run(u.status === 'ACTIVE' ? 'Compte suspendu' : 'Compte réactivé', () => api.patch(`${API_ENDPOINTS.USERS}/${u.id}`, { status: u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' }))}>
                         {u.status === 'ACTIVE' ? 'Suspendre' : 'Réactiver'}
                       </Button>

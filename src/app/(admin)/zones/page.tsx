@@ -3,12 +3,12 @@ import { Metadata } from 'next'
 import { Col, Row } from 'react-bootstrap'
 import ZoneCard from "./components/ZoneCard";
 
-export const metadata: Metadata = { title: 'zones' }
+export const metadata: Metadata = { title: 'Zones tarifaires' }
 
 const ZonePage = () => {
   return (
       <>
-        <PageTitle title="Zones pays" subTitle="Listes" />
+        <PageTitle title="Zones tarifaires" subTitle="Regroupements de pays pour les frais" />
         <Row>
           <Col xs={12}>
             <ZoneCard />

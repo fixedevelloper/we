@@ -1,15 +1,19 @@
 'use client'
 import React, { useState } from 'react'
-import { Button, Card, CardHeader, Col, Form, Row, Table } from 'react-bootstrap'
+import { Badge, Button, Card, CardHeader, Col, Form, Row, Table } from 'react-bootstrap'
 import { useFetchData } from '@/hooks/useFetchData'
 import { useApi } from '@/hooks/useApi'
 import { useNotificationContext } from '@/context/useNotificationContext'
 import API_ENDPOINTS from '../../../(other)/api/Constant'
 import { ApiError } from '@/lib/api/http'
-import { formatDate } from '@/lib/api/format'
+import { formatDate, formatMoney } from '@/lib/api/format'
 
 type Zone = { id: number; code: string; name: string }
 type Fee = { id: number; pricingZoneId: number; currency: string; minAmount: string; maxAmount: string; percent: number; fixedFee?: string; effectiveFrom: string; effectiveTo?: string }
+
+/** Une tranche est « à venir » avant sa date de début, « clôturée » une fois sa date de fin passée. */
+const state = (f: Fee, now: string): { label: string; variant: string } =>
+  f.effectiveFrom > now ? { label: 'À venir', variant: 'info' } : f.effectiveTo && f.effectiveTo <= now ? { label: 'Clôturée', variant: 'secondary' } : { label: 'En vigueur', variant: 'success' }
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -25,6 +29,7 @@ const GrilleTarifaireCard: React.FC = () => {
   const fees = useFetchData<Fee[]>(API_ENDPOINTS.FEE_SCHEDULES)
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ pricingZoneId: '', currency: '', minAmount: '', maxAmount: '', percent: '', fixedFee: '', effectiveFrom: today() })
+  const [zoneFilter, setZoneFilter] = useState('')
   const zoneName = (id: number) => zones.data?.find((z) => z.id === id)?.name ?? `#${id}`
 
   const fail = (e: unknown) => showNotification({ message: e instanceof ApiError ? e.fullMessage : 'Erreur inattendue', variant: 'danger' })
@@ -63,12 +68,24 @@ const GrilleTarifaireCard: React.FC = () => {
     }
   }
 
+  const now = today()
+  const rows = (fees.data ?? [])
+    .filter((f) => !zoneFilter || f.pricingZoneId === Number(zoneFilter))
+    .sort((a, b) => zoneName(a.pricingZoneId).localeCompare(zoneName(b.pricingZoneId)) || a.currency.localeCompare(b.currency) || Number(a.minAmount) - Number(b.minAmount) || b.effectiveFrom.localeCompare(a.effectiveFrom))
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value })
 
   return (
     <Card>
-      <CardHeader className="border-bottom">
-        <h4 className="header-title mb-0">Grille tarifaire</h4>
+      <CardHeader className="border-bottom d-flex flex-wrap align-items-center gap-2">
+        <div className="flex-grow-1">
+          <h4 className="header-title mb-0">Grille tarifaire</h4>
+          {fees.data && <small className="text-muted">{rows.length} tranche{rows.length > 1 ? 's' : ''}</small>}
+        </div>
+        <Form.Select style={{ width: 'auto' }} value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)}>
+          <option value="">Toutes les zones</option>
+          {(zones.data ?? []).map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+        </Form.Select>
       </CardHeader>
       <Card.Body className="border-bottom">
         <Form onSubmit={create}>
@@ -102,22 +119,27 @@ const GrilleTarifaireCard: React.FC = () => {
               <tr>
                 <th>Zone</th>
                 <th>Devise</th>
-                <th>Tranche</th>
+                <th>Tranche (de exclu → à inclus)</th>
                 <th>Frais</th>
                 <th>Du</th>
                 <th>Au</th>
+                <th>Statut</th>
                 <th className="text-end">Action</th>
               </tr>
             </thead>
             <tbody>
-              {(fees.data ?? []).map((f) => (
+              {rows.length === 0 && (
+                <tr><td colSpan={8} className="text-center text-muted py-4">Aucune tranche</td></tr>
+              )}
+              {rows.map((f) => (
                 <tr key={f.id}>
                   <td>{zoneName(f.pricingZoneId)}</td>
                   <td>{f.currency}</td>
-                  <td>{f.minAmount} → {f.maxAmount}</td>
-                  <td>{f.percent} %{f.fixedFee && Number(f.fixedFee) > 0 ? ` + ${f.fixedFee}` : ''}</td>
+                  <td>{formatMoney({ amount: f.minAmount, currency: f.currency })} → {formatMoney({ amount: f.maxAmount, currency: f.currency })}</td>
+                  <td>{f.percent} %{f.fixedFee && Number(f.fixedFee) > 0 ? ` + ${formatMoney({ amount: f.fixedFee, currency: f.currency })}` : ''}</td>
                   <td>{formatDate(f.effectiveFrom)}</td>
-                  <td>{f.effectiveTo ? formatDate(f.effectiveTo) : 'en vigueur'}</td>
+                  <td>{f.effectiveTo ? formatDate(f.effectiveTo) : '-'}</td>
+                  <td><Badge bg={state(f, now).variant}>{state(f, now).label}</Badge></td>
                   <td className="text-end">{!f.effectiveTo && <Button size="sm" variant="outline-danger" onClick={() => end(f)}>Clôturer</Button>}</td>
                 </tr>
               ))}

@@ -109,3 +109,26 @@ export type TransferSummary = {
   providerReference?: string
   failureReason?: string
 }
+
+export type DashboardMonth = {
+  /** « 2026-10 » (mois civil UTC). */
+  month: string
+  transferVolume: string
+  transferCount: number
+  fees: string
+  topUpVolume: string
+  topUpCount: number
+  newCustomers: number
+}
+
+/** Chiffres du tableau de bord : 12 mois dans une seule devise, montants en chaînes décimales. */
+export type Dashboard = {
+  currency: string
+  generatedAt: string
+  months: DashboardMonth[]
+  customers: number
+  activeCustomers: number
+  walletBalance: string
+  pendingTopUps: number
+  transfersByStatus: Record<string, number>
+}

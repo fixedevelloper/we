@@ -1,6 +1,8 @@
 'use client'
-import React, { useState } from 'react'
-import { Badge, Button, Card, CardFooter, CardHeader, Table } from 'react-bootstrap'
+import React, { useEffect, useState } from 'react'
+import debounce from 'lodash.debounce'
+import IconifyIcon from '@/components/wrappers/IconifyIcon'
+import { Badge, Button, Card, CardFooter, CardHeader, Form, Table } from 'react-bootstrap'
 import { useSession } from 'next-auth/react'
 import { useFetchData } from '@/hooks/useFetchData'
 import { useApi } from '@/hooks/useApi'
@@ -8,7 +10,7 @@ import { useNotificationContext } from '@/context/useNotificationContext'
 import API_ENDPOINTS from '../../../(other)/api/Constant'
 import Paginator from '@/components/Paginator'
 import { ApiError } from '@/lib/api/http'
-import { formatDateTime, formatMoney } from '@/lib/api/format'
+import { ADJUSTMENT_STATUS_LABELS, formatDateTime, formatMoney } from '@/lib/api/format'
 import type { Money, Page } from '@/lib/api/types'
 
 type Adjustment = {
@@ -34,7 +36,24 @@ const AdjustmentCard: React.FC = () => {
   const { showNotification } = useNotificationContext()
   const [page, setPage] = useState(0)
   const [busy, setBusy] = useState(false)
-  const { data, loading, error, refetch } = useFetchData<Page<Adjustment>>(API_ENDPOINTS.BALANCE_ADJUSTMENTS, { page, size: 10, sort: 'createdAt,desc' })
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [status, setStatus] = useState('')
+
+  useEffect(() => {
+    const handler = debounce(() => setDebouncedSearch(search), 500)
+    handler()
+    return () => handler.cancel()
+  }, [search])
+  useEffect(() => setPage(0), [debouncedSearch, status])
+
+  const { data, loading, error, refetch } = useFetchData<Page<Adjustment>>(API_ENDPOINTS.BALANCE_ADJUSTMENTS, {
+    page,
+    size: 10,
+    search: debouncedSearch,
+    status,
+    sort: 'createdAt,desc',
+  })
 
   const decide = async (a: Adjustment, approve: boolean) => {
     let body: Record<string, string> = {}
@@ -60,8 +79,28 @@ const AdjustmentCard: React.FC = () => {
   const items = data?.content ?? []
   return (
     <Card>
-      <CardHeader className="border-bottom">
-        <h4 className="header-title mb-0">Ajustements de solde</h4>
+      <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
+        <div className="flex-grow-1">
+          <h4 className="header-title">Ajustements de solde</h4>
+          {data && (
+            <p className="text-muted mb-0 small">
+              {data.totalElements.toLocaleString('fr-FR')} ajustement{data.totalElements > 1 ? 's' : ''}
+              {(debouncedSearch || status) && ' correspondant aux filtres'}
+            </p>
+          )}
+        </div>
+        <Form.Select style={{ width: 180 }} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">Tous les statuts</option>
+          {Object.entries(ADJUSTMENT_STATUS_LABELS).map(([code, s]) => (
+            <option key={code} value={code}>
+              {s.label}
+            </option>
+          ))}
+        </Form.Select>
+        <div className="position-relative">
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="form-control ps-4" placeholder="Client, motif..." />
+          <IconifyIcon icon="ti:search" className="ti position-absolute top-50 translate-middle-y start-0 ms-2" />
+        </div>
       </CardHeader>
       <div className="table-responsive">
         {loading && !data ? (
@@ -95,12 +134,21 @@ const AdjustmentCard: React.FC = () => {
                   <td className="text-nowrap">{formatDateTime(a.createdAt)}</td>
                   <td>{a.customer?.displayName || '-'}</td>
                   <td>{a.direction === 'CREDIT' ? 'Crédit' : 'Débit'}</td>
-                  <td className="text-nowrap">{formatMoney(a.amount)}</td>
+                  <td className="text-nowrap">
+                    <span className={a.direction === 'CREDIT' ? 'text-success' : 'text-danger'}>
+                      {a.direction === 'CREDIT' ? '+' : '−'} {formatMoney(a.amount)}
+                    </span>
+                  </td>
                   <td>{a.reason}</td>
                   <td className="small">{a.requestedBy}</td>
                   <td>
-                    <Badge bg={a.status === 'APPROVED' ? 'success' : a.status === 'PENDING' ? 'warning' : 'danger'}>{a.status}</Badge>
-                    {a.decidedBy && <div className="small text-muted">par {a.decidedBy}</div>}
+                    <Badge bg={ADJUSTMENT_STATUS_LABELS[a.status]?.variant ?? 'secondary'}>{ADJUSTMENT_STATUS_LABELS[a.status]?.label ?? a.status}</Badge>
+                    {a.decidedBy && (
+                      <div className="small text-muted">
+                        par {a.decidedBy}
+                        {a.decidedAt && ` le ${formatDateTime(a.decidedAt)}`}
+                      </div>
+                    )}
                   </td>
                   <td className="text-end text-nowrap">
                     {a.status === 'PENDING' && (

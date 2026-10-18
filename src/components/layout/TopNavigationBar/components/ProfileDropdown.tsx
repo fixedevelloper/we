@@ -3,11 +3,13 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Dropdown, DropdownHeader, DropdownItem, DropdownMenu, DropdownToggle } from 'react-bootstrap'
+import { usePathname } from 'next/navigation'
 import {useSession} from "next-auth/react";
 import { signOut } from "next-auth/react";
 const ProfileDropdown = () => {
   const {data: session, status} = useSession();
   const user = session?.user;
+  const pathname = usePathname() ?? '/dashboard'
   return (
     <div className="topbar-item nav-user">
       <Dropdown>
@@ -27,29 +29,24 @@ const ProfileDropdown = () => {
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end">
           <DropdownHeader className="noti-title">
-            <h6 className="text-overflow m-0">Welcome !</h6>
+            <h6 className="text-overflow m-0">{user?.email ?? 'Bienvenue'}</h6>
           </DropdownHeader>
-          <DropdownItem>
+          <DropdownItem as={Link} href="/profile">
             <IconifyIcon icon="ri:account-circle-line" className=" me-1 fs-16 align-middle" />
-            <span className="align-middle">My Account</span>
+            <span className="align-middle">Mon profil</span>
           </DropdownItem>
-
-          <DropdownItem>
+          <DropdownItem as={Link} href="/settings">
             <IconifyIcon icon="ri:settings-2-line" className=" me-1 fs-16 align-middle" />
-            <span className="align-middle">Settings</span>
-          </DropdownItem>
-          <DropdownItem>
-            <IconifyIcon icon="ri:question-line" className=" me-1 fs-16 align-middle" />
-            <span className="align-middle">Support</span>
+            <span className="align-middle">Paramètres</span>
           </DropdownItem>
           <div className="dropdown-divider" />
-          <DropdownItem as={Link} href="/auth/lock-screen">
+          <DropdownItem as={Link} href={`/auth/lock-screen?from=${encodeURIComponent(pathname)}`}>
             <IconifyIcon icon="ri:lock-line" className="me-1 fs-16 align-middle" />
-            <span className="align-middle">Lock Screen</span>
+            <span className="align-middle">Verrouiller</span>
           </DropdownItem>
           <DropdownItem  onClick={() => signOut({ callbackUrl: "/" })} className="active fw-semibold text-danger">
             <IconifyIcon icon="ri:logout-box-line" className="me-1 fs-16 align-middle" />
-            <span className="align-middle">Sign Out</span>
+            <span className="align-middle">Se déconnecter</span>
           </DropdownItem>
         </DropdownMenu>
       </Dropdown>

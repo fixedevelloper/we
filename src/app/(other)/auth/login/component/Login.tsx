@@ -10,10 +10,18 @@ import TextFormInput from '@/components/form/TextFormInput'
 import {developedBy} from "../../../../../context/constants";
 import Spinner from "../../../../../components/Spinner";
 import IconifyIcon from "../../../../../components/wrappers/IconifyIcon";
-import React from "react";
+import React, { useEffect, useState } from 'react'
+import { Alert } from 'react-bootstrap'
 
 const Login = () => {
   const { loading, login, control, mfaRequired, restart } = useSignIn()
+  // next-auth renvoie ici avec ?error=… : un code technique (CredentialsSignin…) ou le message de l'API.
+  const [urlError, setUrlError] = useState<string | null>(null)
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get('error')
+    if (!e) return
+    setUrlError(/^[A-Za-z]+$/.test(e) ? (e === 'SessionRequired' ? 'Votre session a expiré, reconnectez-vous.' : 'Identifiants incorrects.') : e)
+  }, [])
   //console.log(loading)
   return (
     <div className="auth-bg d-flex min-vh-100 justify-content-center align-items-center">
@@ -30,12 +38,16 @@ const Login = () => {
                 ? "Saisissez le code à 6 chiffres affiché par votre application d'authentification."
                 : 'Saisissez votre adresse e-mail et votre mot de passe.'}
             </p>
+            {urlError && !mfaRequired && <Alert variant="danger" className="py-2 text-start">{urlError}</Alert>}
             <form onSubmit={login} action="/" className="text-start mb-3">
               <div className="mb-3" hidden={mfaRequired}>
                 <TextFormInput
                   control={control}
                   name="email"
                   placeholder="Votre adresse e-mail"
+                  type="email"
+                  autoComplete="username"
+                  autoFocus
                   className="bg-light bg-opacity-50 border-light py-2"
                   label="E-mail"
                 />
@@ -46,6 +58,7 @@ const Login = () => {
                   name="password"
                   type="password"
                   placeholder="Votre mot de passe"
+                  autoComplete="current-password"
                   className="bg-light bg-opacity-50 border-light py-2"
                   label="Mot de passe"
                 />
@@ -56,6 +69,10 @@ const Login = () => {
                     control={control}
                     name="code"
                     placeholder="123456"
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                    autoFocus
                     className="bg-light bg-opacity-50 border-light py-2"
                     label="Code de vérification"
                   />

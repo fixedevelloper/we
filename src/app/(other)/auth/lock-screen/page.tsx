@@ -1,13 +1,13 @@
 'use client'
 import logoDark from '@/assets/images/logo-dark.png'
 import logo from '@/assets/images/logo.png'
-import avatar1 from '@/assets/images/users/avatar-1.jpg'
 import { currentYear, developedBy } from '@/context/constants'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Card, Col, Row } from 'react-bootstrap'
 import LockScreen from './components/LockScreen'
-import {useSession} from "next-auth/react";
+import { useSession } from 'next-auth/react'
+import { Suspense } from 'react'
 
 
 const LockScreenPage = () => {
@@ -22,17 +22,25 @@ const LockScreenPage = () => {
               <Image src={logo} alt="logo light" height={26} className="logo-light" />
             </Link>
             <div className="text-center">
-              <Image src={avatar1} alt="avatar" className="avatar-xl rounded-circle img-thumbnail" />
+              <div className="rounded-circle bg-primary-subtle text-primary fw-bold d-inline-flex align-items-center justify-content-center" style={{ width: 96, height: 96, fontSize: 34 }}>
+                {(session?.user?.name ?? '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?'}
+              </div>
               <div className="mt-2 mb-3">
-                <h4 className="fw-semibold text-dark">Hi ! {session?.user?.name}.</h4>
-                <p className="mb-0 fst-italic">Please input your password to access the screen. </p>
+                <h4 className="fw-semibold text-dark">{status === 'loading' ? ' ' : session?.user?.name ?? 'Session expirée'}</h4>
+                <p className="mb-0 text-muted">
+                  {status === 'unauthenticated' ? 'Votre session a expiré, reconnectez-vous.' : 'Session verrouillée. Saisissez votre mot de passe pour continuer.'}
+                </p>
               </div>
             </div>
-            <LockScreen />
+            {status === 'unauthenticated' ? null : (
+              <Suspense>
+                <LockScreen />
+              </Suspense>
+            )}
             <p className="text-muted fs-14 mb-0">
-              Back To
-              <Link href="/auth/login" className="fw-semibold text-danger ms-1">
-                Login !
+              Ce n'est pas vous ?
+              <Link href="/auth/logout" className="fw-semibold text-danger ms-1">
+                Se déconnecter
               </Link>
             </p>
           </Card>

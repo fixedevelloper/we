@@ -39,7 +39,8 @@ const AddTokenCard: React.FC = () => {
         {created && (
           <Alert variant="success">
             Jeton créé (valable jusqu'au {formatDateTime(created.expiresAt)}). <strong>Copiez-le maintenant, il ne sera plus affiché :</strong>
-            <pre className="mt-2 mb-0 user-select-all">{created.token}</pre>
+            <pre className="mt-2 mb-2 user-select-all">{created.token}</pre>
+            <Button size="sm" variant="outline-success" onClick={() => navigator.clipboard?.writeText(created.token).then(() => showNotification({ message: 'Jeton copié', variant: 'success' }))}>Copier</Button>
           </Alert>
         )}
         <Form onSubmit={submit}>

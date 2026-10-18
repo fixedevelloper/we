@@ -4,7 +4,7 @@ import {
   CircleAlert, Disc, File, FileText, LayoutGrid, Wallet2, LucideGlobe2,
   Mail, Map, Paintbrush, Share, Sparkles, Table, Users,
   LucideAlertOctagon, BringToFront,
-  LucideCone, PlusCircleIcon
+  LucideCone, PlusCircleIcon, ArrowLeftRight, Settings, RefreshCw
 } from 'lucide-react'
 
 
@@ -89,13 +89,13 @@ export const MENU_ITEMS: MenuItemType[] = [
   },
   {
     key: 'webtoken',
-    label: 'Manage token',
+    label: 'Jetons web',
     isTitle: true,
     roles: []
   },
   {
     key: 'webtoken',
-    label: 'Tokens',
+    label: 'Jetons',
     icon: BringToFront,
     url: '/manage-token',
     roles: []
@@ -109,7 +109,7 @@ export const MENU_ITEMS: MenuItemType[] = [
   },
   {
     key: 'settings',
-    label: 'Settings',
+    label: 'Configuration',
     isTitle: true,
     roles: []
   },
@@ -125,6 +125,27 @@ export const MENU_ITEMS: MenuItemType[] = [
     label: 'Grille tarifaire',
     icon: File,
     url: '/grilletarifaires',
+    roles: []
+  },
+  {
+    key: 'exchange-rates',
+    label: 'Taux de change',
+    icon: ArrowLeftRight,
+    url: '/exchange-rates',
+    roles: []
+  },
+  {
+    key: 'wace-sync',
+    label: 'Synchronisation Wace',
+    icon: RefreshCw,
+    url: '/synchronisation',
+    roles: []
+  },
+  {
+    key: 'platform-settings',
+    label: 'Paramètres',
+    icon: Settings,
+    url: '/settings',
     roles: []
   },
   {

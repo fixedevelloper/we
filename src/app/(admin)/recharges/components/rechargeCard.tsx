@@ -9,13 +9,13 @@ import API_ENDPOINTS from '../../../(other)/api/Constant'
 import React, { useEffect, useState } from 'react'
 import Paginator from '@/components/Paginator'
 import { ApiError } from '@/lib/api/http'
-import { formatDateTime, formatMoney } from '@/lib/api/format'
+import { formatDateTime, formatMoney, TOPUP_METHOD_LABELS, TOPUP_STATUS_LABELS } from '@/lib/api/format'
 import type { Money, Page } from '@/lib/api/types'
 
 type TopUp = {
   id: string
   reference: string
-  method: 'WACE_MOBILE_MONEY' | 'MANUAL_PROOF'
+  method: 'WACE_MOBILE_MONEY' | 'MANUAL_PROOF' | 'LEGACY'
   amount: Money
   status: string
   failureReason?: string
@@ -24,8 +24,6 @@ type TopUp = {
   customer?: { id?: string; displayName?: string }
   proofDownloadUrl?: string
 }
-
-const VARIANTS: Record<string, string> = { PENDING: 'warning', PROCESSING: 'info', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'secondary', REJECTED: 'danger' }
 
 /** Recharges des portefeuilles : le personnel examine les preuves de paiement manuelles (approbation = crédit du portefeuille). */
 const RechargesCard: React.FC = () => {
@@ -74,12 +72,18 @@ const RechargesCard: React.FC = () => {
       <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
         <div className="flex-grow-1">
           <h4 className="header-title">Recharges</h4>
+          {data && (
+            <p className="text-muted mb-0 small">
+              {data.totalElements.toLocaleString('fr-FR')} recharge{data.totalElements > 1 ? 's' : ''}
+              {(debouncedSearch || status) && ' correspondant aux filtres'}
+            </p>
+          )}
         </div>
         <Form.Select style={{ width: 180 }} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">Tous les statuts</option>
-          {Object.keys(VARIANTS).map((s) => (
-            <option key={s} value={s}>
-              {s}
+          {Object.entries(TOPUP_STATUS_LABELS).map(([code, s]) => (
+            <option key={code} value={code}>
+              {s.label}
             </option>
           ))}
         </Form.Select>
@@ -100,6 +104,7 @@ const RechargesCard: React.FC = () => {
               <tr>
                 <th>Référence</th>
                 <th>Date</th>
+                <th>Terminée le</th>
                 <th>Mode</th>
                 <th>Client</th>
                 <th>Montant</th>
@@ -110,7 +115,7 @@ const RechargesCard: React.FC = () => {
             <tbody>
               {topUps.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted">
+                  <td colSpan={8} className="text-center text-muted">
                     Aucune recharge.
                   </td>
                 </tr>
@@ -119,11 +124,12 @@ const RechargesCard: React.FC = () => {
                 <tr key={t.id}>
                   <td>{t.reference}</td>
                   <td>{formatDateTime(t.createdAt)}</td>
-                  <td>{t.method === 'MANUAL_PROOF' ? 'Preuve de paiement' : 'Mobile money (Wace)'}</td>
+                  <td>{formatDateTime(t.completedAt)}</td>
+                  <td>{TOPUP_METHOD_LABELS[t.method] ?? t.method}</td>
                   <td>{t.customer?.displayName || '-'}</td>
                   <td>{formatMoney(t.amount)}</td>
                   <td>
-                    <Badge bg={VARIANTS[t.status] ?? 'secondary'}>{t.status}</Badge>
+                    <Badge bg={TOPUP_STATUS_LABELS[t.status]?.variant ?? 'secondary'}>{TOPUP_STATUS_LABELS[t.status]?.label ?? t.status}</Badge>
                     {t.failureReason && <div className="small text-muted">{t.failureReason}</div>}
                   </td>
                   <td className="text-end">

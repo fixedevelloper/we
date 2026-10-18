@@ -3,12 +3,12 @@ import { Metadata } from 'next'
 import { Col, Row } from 'react-bootstrap'
 import CustomerCard from "./components/CustomerCard";
 
-export const metadata: Metadata = { title: 'Client' }
+export const metadata: Metadata = { title: 'Clients' }
 
 const CustomersPage = () => {
   return (
       <>
-        <PageTitle title="Pays" subTitle="Listes" />
+        <PageTitle title="Clients" subTitle="Listes" />
         <Row>
           <Col xs={12}>
             <CustomerCard />

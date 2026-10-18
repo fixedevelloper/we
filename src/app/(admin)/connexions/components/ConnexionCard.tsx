@@ -7,7 +7,7 @@ import API_ENDPOINTS from '../../../(other)/api/Constant'
 import useModal from '@/hooks/useModal'
 import Paginator from '@/components/Paginator'
 import ConnexionPdfModal from '../ConnexionPdf'
-import { formatDateTime } from '@/lib/api/format'
+import { formatDateTime, LOGIN_OUTCOME_LABELS } from '@/lib/api/format'
 import type { Page } from '@/lib/api/types'
 
 type Entry = {
@@ -34,6 +34,7 @@ const ConnexionCard: React.FC = () => {
       <CardHeader className="border-bottom card-tabs d-flex flex-wrap align-items-center gap-2">
         <div className="flex-grow-1">
           <h4 className="header-title">Connexions</h4>
+          {data && <small className="text-muted">{data.totalElements} tentative{data.totalElements > 1 ? 's' : ''}</small>}
         </div>
         <button className="btn btn-outline-dark" onClick={() => setShowPdf(true)}>
           <IconifyIcon icon="ri:print-line" className="me-1" />
@@ -54,7 +55,7 @@ const ConnexionCard: React.FC = () => {
               {audits.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-muted">
-                    Aucune entrée.
+                    Aucune tentative de connexion.
                   </td>
                 </tr>
               )}
@@ -62,9 +63,9 @@ const ConnexionCard: React.FC = () => {
                 <tr key={e.id}>
                     <td className="text-nowrap">{formatDateTime(e.occurredAt)}</td>
                     <td>{e.email}</td>
-                    <td><Badge bg={e.outcome === 'SUCCESS' ? 'success' : 'danger'}>{e.outcome}</Badge></td>
+                    <td><Badge bg={LOGIN_OUTCOME_LABELS[e.outcome]?.variant ?? 'secondary'}>{LOGIN_OUTCOME_LABELS[e.outcome]?.label ?? e.outcome}</Badge></td>
                     <td>{e.ipAddress || '-'}</td>
-                    <td className="small text-muted text-truncate" style={{ maxWidth: 260 }}>{e.userAgent || '-'}</td>
+                    <td className="small text-muted text-truncate" style={{ maxWidth: 260 }} title={e.userAgent}>{e.userAgent || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -76,7 +77,7 @@ const ConnexionCard: React.FC = () => {
       </CardFooter>
     </Card>
       <ConnexionPdfModal
-        audits={audits.map((e) => ({ id: e.id, date: formatDateTime(e.occurredAt), name: e.email, status: e.outcome === 'SUCCESS' ? 'ok' : '', message: e.outcome, ip_address: e.ipAddress ?? '', user: null })) as any}
+        audits={audits.map((e) => ({ id: e.id, date: formatDateTime(e.occurredAt), name: e.email, status: e.outcome === 'SUCCESS' ? 'ok' : '', message: LOGIN_OUTCOME_LABELS[e.outcome]?.label ?? e.outcome, ip_address: e.ipAddress ?? '', user: null })) as any}
         show={showPdf}
         onClose={() => setShowPdf(false)}
         begin_date={from}

@@ -89,6 +89,8 @@ export const options: NextAuthOptions = {
 
   pages: {
     signIn: "/auth/login",
+    // Une erreur d'authentification revient sur l'écran de connexion (message dans ?error=) au lieu de la page anglaise de next-auth.
+    error: "/auth/login",
   },
 
   callbacks: {

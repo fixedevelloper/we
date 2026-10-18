@@ -22,7 +22,7 @@ const EditCustomerPage = () => {
 
     return (
         <>
-            <PageTitle title="Modifier le  client" subTitle="Informations complètes" />
+            <PageTitle title="Statut du compte client" subTitle="Informations complètes" />
             <EditCustomerCard customerId={id as string} />
         </>
     );
